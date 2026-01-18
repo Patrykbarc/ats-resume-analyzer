@@ -1,5 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Note } from '@/components/ui/note'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import { AnalysisDetails } from '@/services/analyseService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { lazy, Suspense } from 'react'
@@ -49,7 +53,14 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
           {TABS.analyse.trigger}
         </TabsTrigger>
         <TabsTrigger value={TABS.preview.value} disabled={shouldDisablePreview}>
-          {TABS.preview.trigger}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p>{TABS.preview.trigger}</p>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Preview available to owner only</p>
+            </TooltipContent>
+          </Tooltip>
         </TabsTrigger>
       </TabsList>
 
@@ -88,14 +99,6 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
               parsing (like missing formatting or broken line breaks) can
               severely impact their ability to read key information.
             </p>
-
-            <Note
-              variant="muted"
-              size="sm"
-              title="Info"
-              className="mt-4"
-              description="Parsed file preview is available only to the analysis owner."
-            />
           </div>
 
           <Card>
