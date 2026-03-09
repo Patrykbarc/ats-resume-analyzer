@@ -64,6 +64,7 @@ model User {
   subscriptionStatus           SubscriptionStatus?
   subscriptionStartedAt        DateTime?
   subscriptionCurrentPeriodEnd DateTime?
+  cancelAtPeriodEnd           Boolean             @default(false)
 
   refreshToken String?      @unique
   requestLogs  RequestLog[]

@@ -5,6 +5,7 @@ type UserBillingInformation = {
   id: User['id']
   nextBillingDate: NextBillingDate
   subscriptionStatus?: User['subscriptionStatus']
+  cancelAtPeriodEnd?: boolean
   className?: string
 }
 

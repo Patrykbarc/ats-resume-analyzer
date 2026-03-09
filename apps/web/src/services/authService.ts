@@ -82,7 +82,10 @@ export const getCurrentUserService = async () => {
 type CurrentUserDetails = CurrentUser &
   Pick<
     UserSchemaType,
-    'createdAt' | 'subscriptionStatus' | 'subscriptionCurrentPeriodEnd'
+    | 'createdAt'
+    | 'subscriptionStatus'
+    | 'subscriptionCurrentPeriodEnd'
+    | 'cancelAtPeriodEnd'
   >
 
 export const getUserAccountInformationsService = async () => {

@@ -11,7 +11,7 @@ export const isPremiumUser = (user: UserSchemaType | undefined): boolean => {
   }
 
   if (!user.subscriptionCurrentPeriodEnd) {
-    return true
+    return false
   }
 
   return isAfter(user.subscriptionCurrentPeriodEnd, new Date())

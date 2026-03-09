@@ -276,11 +276,12 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         id: true,
         email: true,
         isPremium: true,
+        subscriptionCurrentPeriodEnd: true,
 
         ...(extendQuery && {
           createdAt: true,
           subscriptionStatus: true,
-          subscriptionCurrentPeriodEnd: true
+          cancelAtPeriodEnd: true
         })
       }
     })
@@ -291,8 +292,17 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       })
     }
 
+    const computedIsPremium =
+      user.isPremium &&
+      user.subscriptionCurrentPeriodEnd != null &&
+      user.subscriptionCurrentPeriodEnd > new Date()
+
+    const { subscriptionCurrentPeriodEnd, ...userWithoutPeriodEnd } = user
+
     res.status(StatusCodes.OK).json({
-      ...user
+      ...userWithoutPeriodEnd,
+      isPremium: computedIsPremium,
+      ...(extendQuery && { subscriptionCurrentPeriodEnd })
     })
   } catch (error) {
     handleError(error, res)

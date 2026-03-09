@@ -47,6 +47,7 @@ function RouteComponent() {
         id={data.id}
         nextBillingDate={nextBillingDate}
         subscriptionStatus={data.subscriptionStatus}
+        cancelAtPeriodEnd={data.cancelAtPeriodEnd}
       />
     </div>
   )

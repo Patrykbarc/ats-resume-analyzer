@@ -1,10 +1,13 @@
-import { addMonths } from 'date-fns'
 import { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import Stripe from 'stripe'
 import { getEnvs } from '../lib/getEnv'
 import { isStripeError } from '../lib/isStripeError'
 import { logger, prisma } from '../server'
+import { handleCheckoutSessionCompleted } from './helper/checkout/handleCheckoutSessionCompleted'
+import { handleInvoicePaymentFailed } from './helper/checkout/handleInvoicePaymentFailed'
+import { handleSubscriptionDeleted } from './helper/checkout/handleSubscriptionDeleted'
+import { handleSubscriptionUpdated } from './helper/checkout/handleSubscriptionUpdated'
 import { handleError } from './helper/handleError'
 
 const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL } = getEnvs()
@@ -46,47 +49,40 @@ export const stripeWebhookHandler = async (req: Request, res: Response) => {
     logger.error(`Webhook signature verification failed: ${err}`)
     return res.status(400).send(`Webhook Error`)
   }
-
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session
-
-    if (!session.metadata?.userId) {
-      logger.error(
-        `Missing userId in session metadata. Metadata: ${JSON.stringify(session.metadata)}`
-      )
-      return res.status(400).send('Bad Request: Missing userId in metadata')
-    }
-
-    const userId = session.metadata.userId
-
-    try {
-      const now = new Date()
-      const nextMonth = addMonths(now, 1)
-
-      logger.info('Updating user subscription status in the database')
-
-      const updatedUser = await prisma.user.update({
-        data: {
-          isPremium: true,
-          stripeCustomerId: session.customer as string,
-          stripeSubscriptionId: session.subscription as string,
-          subscriptionCurrentPeriodEnd: nextMonth,
-          subscriptionStartedAt: now,
-          subscriptionStatus: 'active'
-        },
-        where: { id: userId }
-      })
-
-      if (!updatedUser) {
-        logger.error(`User with ID ${userId} was not found.`)
-        return res.status(404).send('User not found')
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const result = await handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session
+        )
+        if (result) {
+          return res.status(result.status).send(result.message)
+        }
+        break
       }
 
-      logger.info(`Payment completed for user ${userId}`)
-    } catch (error) {
-      logger.error(`Error updating user ${userId}: ${error}`)
-      return res.status(500).send('Internal Server Error')
+      case 'customer.subscription.updated': {
+        await handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription
+        )
+        break
+      }
+
+      case 'customer.subscription.deleted': {
+        await handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription
+        )
+        break
+      }
+
+      case 'invoice.payment_failed': {
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
+        break
+      }
     }
+  } catch (error) {
+    logger.error(`Error processing webhook event ${event.type}: ${error}`)
+    return res.status(500).send('Internal Server Error')
   }
 
   res.status(200).send('Webhook received')
@@ -111,6 +107,12 @@ export const verifyPaymentSession = async (req: Request, res: Response) => {
     }
 
     if (session.payment_status === 'paid' && session.status === 'complete') {
+      logger.info(
+        `Session ${id} is verified. Ensuring user subscription is updated.`
+      )
+
+      await handleCheckoutSessionCompleted(session)
+
       return res.status(StatusCodes.OK).json({
         status: 'verified',
         sessionId: id,
@@ -138,7 +140,7 @@ export const verifyPaymentSession = async (req: Request, res: Response) => {
 
 export const cancelSubscription = async (req: Request, res: Response) => {
   try {
-    const { id } = req.body
+    const id = (req.user as { id: string }).id
 
     logger.info(`Cancelling subscription for user: ${id}`)
 
@@ -154,31 +156,29 @@ export const cancelSubscription = async (req: Request, res: Response) => {
       })
     }
 
-    await stripe.subscriptions.update(user.stripeSubscriptionId, {
-      cancel_at_period_end: true
-    })
+    const updatedSubscription = await stripe.subscriptions.update(
+      user.stripeSubscriptionId,
+      {
+        cancel_at_period_end: true
+      }
+    )
 
     logger.info(`Subscription for user ${id} set to cancel at period end.`)
 
-    const updatedUser = await prisma.user.update({
+    const currentPeriodEnd = updatedSubscription.items.data[0]?.current_period_end
+
+    await prisma.user.update({
       where: { id },
       data: {
-        subscriptionStatus: 'canceled'
+        cancelAtPeriodEnd: true,
+        subscriptionCurrentPeriodEnd: currentPeriodEnd
+          ? new Date(currentPeriodEnd * 1000)
+          : null
       }
     })
 
-    if (!updatedUser) {
-      logger.error(
-        `Failed to update subscription status in database for userId: ${id}`
-      )
-
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        error: 'Failed to update subscription status in database.'
-      })
-    }
-
     logger.info(
-      `User ${id} subscription status updated to 'canceled' in database.`
+      `User ${id} subscription marked as cancelAtPeriodEnd in database.`
     )
 
     res.status(StatusCodes.OK).json({
@@ -197,7 +197,7 @@ export const cancelSubscription = async (req: Request, res: Response) => {
 
 export const restoreSubscription = async (req: Request, res: Response) => {
   try {
-    const { id } = req.body
+    const id = (req.user as { id: string }).id
 
     const user = await prisma.user.findUnique({ where: { id } })
 
@@ -233,7 +233,8 @@ export const restoreSubscription = async (req: Request, res: Response) => {
     await prisma.user.update({
       where: { id },
       data: {
-        subscriptionStatus: updatedSubscription.status
+        subscriptionStatus: updatedSubscription.status,
+        cancelAtPeriodEnd: false
       }
     })
 

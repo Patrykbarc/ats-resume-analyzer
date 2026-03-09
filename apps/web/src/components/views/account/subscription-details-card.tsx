@@ -12,13 +12,20 @@ import { Link } from '@tanstack/react-router'
 import { CreditCard } from 'lucide-react'
 import { ActiveSubscriptionStatus } from './components/active-subscription-status'
 import { CanceledSubscriptionStatus } from './components/canceled-subscription-status'
+import { ExpiredSubscriptionStatus } from './components/expired-subscription-status'
 import { UserBillingInformation } from './types/types'
 
 export function SubscriptionDetailsCard({
   id,
   nextBillingDate,
-  subscriptionStatus
+  subscriptionStatus,
+  cancelAtPeriodEnd
 }: UserBillingInformation) {
+  const isCanceled =
+    subscriptionStatus === 'canceled' && !cancelAtPeriodEnd
+  const isPendingCancel =
+    subscriptionStatus === 'active' && cancelAtPeriodEnd
+
   return (
     <Card>
       <CardHeader>
@@ -45,13 +52,15 @@ export function SubscriptionDetailsCard({
           </CardContainer>
         )}
 
-        {subscriptionStatus === 'active' && (
+        {subscriptionStatus === 'active' && !cancelAtPeriodEnd && (
           <ActiveSubscriptionStatus id={id} nextBillingDate={nextBillingDate} />
         )}
 
-        {subscriptionStatus === 'canceled' && (
+        {isPendingCancel && (
           <CanceledSubscriptionStatus nextBillingDate={nextBillingDate} />
         )}
+
+        {isCanceled && <ExpiredSubscriptionStatus />}
       </CardContent>
     </Card>
   )

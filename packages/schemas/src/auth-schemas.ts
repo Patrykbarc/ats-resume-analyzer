@@ -77,7 +77,8 @@ const UserSchema = z.object({
   stripeSubscriptionId: z.string().nullable(),
   subscriptionStatus: z.enum(SubscriptionStatus).nullable(),
   subscriptionStartedAt: z.date().nullable(),
-  subscriptionCurrentPeriodEnd: z.date().nullable()
+  subscriptionCurrentPeriodEnd: z.date().nullable(),
+  cancelAtPeriodEnd: z.boolean()
 })
 
 type RegisterUserSchemaType = z.infer<typeof RegisterUserSchema>

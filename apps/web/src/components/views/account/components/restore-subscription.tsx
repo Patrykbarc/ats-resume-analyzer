@@ -10,10 +10,13 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRestoreSubscription } from '@/hooks/checkout/useRestoreSubscription'
 import { cn } from '@/lib/utils'
 import { User } from '@monorepo/database'
+import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export function RestoreSubscription({
   id,
@@ -22,9 +25,19 @@ export function RestoreSubscription({
   id: User['id']
   className?: string
 }) {
+  const queryClient = useQueryClient()
+
   const { isPending, mutate } = useRestoreSubscription({
     onSuccess: () => {
-      window.location.reload()
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.session.account
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.session.currentUser
+      })
+    },
+    onError: () => {
+      toast.error('Failed to restore subscription. Please try again.')
     }
   })
 

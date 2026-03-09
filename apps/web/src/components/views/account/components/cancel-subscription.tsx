@@ -10,9 +10,12 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useCancelSubscription } from '@/hooks/checkout/useCancelSubscription'
 import { cn } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { UserBillingInformation } from '../types/types'
 
 export function CancelSubscription({
@@ -20,9 +23,19 @@ export function CancelSubscription({
   nextBillingDate,
   className
 }: UserBillingInformation) {
+  const queryClient = useQueryClient()
+
   const { isPending, mutate } = useCancelSubscription({
     onSuccess: () => {
-      window.location.reload()
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.session.account
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.session.currentUser
+      })
+    },
+    onError: () => {
+      toast.error('Failed to cancel subscription. Please try again.')
     }
   })
 
