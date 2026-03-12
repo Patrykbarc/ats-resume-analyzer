@@ -92,7 +92,7 @@ type ParsedFile = {
   has_more: boolean
 }
 
-export const getAnalysis = async (req: Request, res: Response) => {
+export const getAnalysis = async (req: Request<{ id: string }>, res: Response) => {
   const { id } = req.params
 
   try {
@@ -109,7 +109,7 @@ export const getAnalysis = async (req: Request, res: Response) => {
           }
         }
       }),
-      openAiClient.responses.retrieve(id),
+      openAiClient.responses.retrieve(id).then(res => ({ id: res.id, output_text: res.output_text })),
       openAiClient.responses.inputItems.list(id) as unknown as ParsedFile
     ])
 
@@ -124,7 +124,7 @@ export const getAnalysis = async (req: Request, res: Response) => {
   }
 }
 
-export const getAnalysisHistory = async (req: Request, res: Response) => {
+export const getAnalysisHistory = async (req: Request<{ id: string }>, res: Response) => {
   const { id } = req.params
   const { limit, page } = req.query
 

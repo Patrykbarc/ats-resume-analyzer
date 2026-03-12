@@ -1,4 +1,4 @@
-import z from 'zod'
+import { z } from 'zod'
 
 const PasswordLoginSchema = z
   .string()
@@ -16,27 +16,30 @@ const RegisterPasswordSchema = PasswordLoginSchema.min(8, {
   })
   .regex(/[0-9]/, { message: 'Password must contain at least one number' })
 
-const RegisterUserSchema = z
-  .object({
-    email: z
-      .string()
-      .min(1, {
-        message: 'Please enter an email address'
+const RegisterUserBaseSchema = z.object({
+  email: z
+    .string()
+    .min(1, {
+      message: 'Please enter an email address'
+    })
+    .pipe(
+      z.email({
+        message: 'Invalid email format'
       })
-      .pipe(
-        z.email({
-          message: 'Invalid email format'
-        })
-      ),
-    password: RegisterPasswordSchema,
-    confirmPassword: z
-      .string()
-      .min(1, { message: 'Please confirm your password' })
-  })
-  .refine((data) => data.password === data.confirmPassword, {
+    ),
+  password: RegisterPasswordSchema,
+  confirmPassword: z
+    .string()
+    .min(1, { message: 'Please confirm your password' })
+})
+
+const RegisterUserSchema = RegisterUserBaseSchema.refine(
+  (data) => data.password === data.confirmPassword,
+  {
     message: "Passwords don't match",
     path: ['confirmPassword']
-  })
+  }
+)
 
 const VerifyUserSchema = z.object({
   token: z.string().optional()
@@ -49,11 +52,11 @@ const ResendEmailValidationSchema = z.object({
     .pipe(z.email({ message: 'Invalid email format' }))
 })
 
-const ResetPasswordSchema = RegisterUserSchema.omit({ email: true }).extend({
+const ResetPasswordSchema = RegisterUserBaseSchema.omit({ email: true }).extend({
   token: z.string().min(1, { message: 'Token is required' })
 })
 
-const LoginUserSchema = RegisterUserSchema.pick({ email: true }).extend({
+const LoginUserSchema = RegisterUserBaseSchema.pick({ email: true }).extend({
   password: PasswordLoginSchema
 })
 
