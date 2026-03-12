@@ -9,7 +9,8 @@ import { analyzeLimiter } from '../config/limiter.config'
 import {
   createAnalyze,
   getAnalysis,
-  getAnalysisHistory
+  getAnalysisHistory,
+  getParsedFile
 } from '../controllers/analyse.controller'
 import { requireAuth } from '../middleware/require-auth.middleware'
 import { requirePremium } from '../middleware/require-premium.middleware'
@@ -44,6 +45,7 @@ router.post(
 )
 
 router.get('/analysis/:id', validateData(AnalysisParamsSchema), getAnalysis)
+router.get('/analysis/:id/parsed-file', requireAuth, validateData(AnalysisParamsSchema), getParsedFile)
 
 router.get(
   '/analysis-history/:id',

@@ -4,6 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { useGetParsedFile } from '@/hooks/useGetParsedFile'
 import { AnalysisDetails } from '@/services/analyseService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { lazy, Suspense } from 'react'
@@ -45,6 +46,8 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
   const analysisOwner = analysis.user?.id
 
   const shouldDisablePreview = user?.id === analysisOwner ? false : true
+  const isOwner = !shouldDisablePreview
+  const { data: parsedFileData, isLoading: isParsedFileLoading } = useGetParsedFile(analysis.id, isOwner)
 
   return (
     <Tabs className="space-y-6" defaultValue={TABS.analyse.value}>
@@ -103,7 +106,11 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
 
           <Card>
             <CardContent>
-              <p className="whitespace-pre-line">{analysis.parsed_file}</p>
+              {isParsedFileLoading ? (
+                <p className="text-muted-foreground">Loading preview...</p>
+              ) : (
+                <p className="whitespace-pre-line">{parsedFileData?.parsed_file}</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

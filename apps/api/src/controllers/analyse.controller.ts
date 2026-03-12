@@ -96,7 +96,7 @@ export const getAnalysis = async (req: Request<{ id: string }>, res: Response) =
   const { id } = req.params
 
   try {
-    const [user, response, responseList] = await Promise.all([
+    const [user, response] = await Promise.all([
       prisma.user.findFirst({
         select: {
           id: true
@@ -109,16 +109,43 @@ export const getAnalysis = async (req: Request<{ id: string }>, res: Response) =
           }
         }
       }),
-      openAiClient.responses.retrieve(id).then(res => ({ id: res.id, output_text: res.output_text })),
-      openAiClient.responses.inputItems.list(id) as unknown as ParsedFile
+      openAiClient.responses.retrieve(id).then(res => ({ id: res.id, output_text: res.output_text }))
     ])
 
-    const parsed_file = responseList.data[0].content[0].text
     const parsedResponse = parseOpenAiApiResponse(response)
 
     return res
       .status(StatusCodes.OK)
-      .json({ status: StatusCodes.OK, ...parsedResponse, parsed_file, user })
+      .json({ status: StatusCodes.OK, ...parsedResponse, user })
+  } catch (error) {
+    handleError(error, res)
+  }
+}
+
+export const getParsedFile = async (req: Request<{ id: string }>, res: Response) => {
+  const { id } = req.params
+  const requestingUser = req.user as UserSchemaType
+
+  try {
+    const [owner, responseList] = await Promise.all([
+      prisma.user.findFirst({
+        select: { id: true },
+        where: { requestLogs: { some: { analyseId: id } } }
+      }),
+      openAiClient.responses.inputItems.list(id) as unknown as ParsedFile
+    ])
+
+    if (!owner || owner.id !== requestingUser.id) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        status: StatusCodes.FORBIDDEN,
+        error: 'Access denied. You are not the owner of this analysis.'
+      })
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: StatusCodes.OK,
+      parsed_file: responseList.data[0].content[0].text
+    })
   } catch (error) {
     handleError(error, res)
   }

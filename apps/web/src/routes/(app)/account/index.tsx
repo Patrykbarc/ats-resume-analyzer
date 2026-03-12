@@ -6,7 +6,8 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import { withSessionGuard } from '@/guards/withSessionGuard'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { getUserAccountInformationsService } from '@/services/authService'
-import { createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
 import { format } from 'date-fns'
 
 export const Route = createFileRoute('/(app)/account/')({
@@ -30,7 +31,10 @@ export const Route = createFileRoute('/(app)/account/')({
 })
 
 function RouteComponent() {
-  const data = useLoaderData({ from: '/(app)/account/' })
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.session.account,
+    queryFn: getUserAccountInformationsService,
+  })
 
   if (!data) {
     return null

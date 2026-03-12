@@ -5,8 +5,12 @@ import type { AiAnalysis } from '@monorepo/types'
 import { AxiosResponse } from 'axios'
 
 export type AnalysisDetails = AiAnalysis & {
-  parsed_file?: string
   user?: Pick<UserSchemaType, 'id'> | null
+}
+
+export type ParsedFileResponse = {
+  status: number
+  parsed_file: string
 }
 
 export type AnalyseResult = AxiosResponse<AnalysisDetails>
@@ -48,6 +52,11 @@ export const getAnalysis = async (id: string) => {
   const response = await apiClient<AnalysisDetails>(`/cv/analysis/${id}`)
 
   return response
+}
+
+export const getParsedFile = async (id: string): Promise<ParsedFileResponse> => {
+  const response = await apiClient.get<ParsedFileResponse>(`/cv/analysis/${id}/parsed-file`)
+  return response.data
 }
 
 export const getAnalysisHistory = async ({
