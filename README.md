@@ -61,7 +61,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone <repository-url>
-cd resume-analizer
+cd ats-resume-analyzer
 ```
 
 ### 2. Install Dependencies
@@ -188,7 +188,7 @@ pnpm build
 ## Project Structure
 
 ```
-resume-analizer/
+ats-resume-analyzer/
 ├── apps/
 │   ├── api/                 # Backend Express server
 │   │   ├── src/
@@ -232,6 +232,18 @@ resume-analizer/
 
 - `pnpm build` - Build all packages and applications
 - `pnpm build:api` - Build only API and its dependencies
+- `pnpm build:web` - Build only web and its dependencies
+
+### Production
+
+- `pnpm start:api` - Start API server in production mode
+
+### Type Checking
+
+- `pnpm type-check` - Run type checks across all packages
+- `pnpm tsc` - Run TypeScript compiler check on all packages
+- `pnpm tsc:web` - Run TypeScript compiler check on web only
+- `pnpm tsc:api` - Run TypeScript compiler check on API only
 
 ### Database
 
@@ -247,6 +259,7 @@ resume-analizer/
 - `pnpm lint` - Run ESLint linter
 - `pnpm prettier` - Format code with Prettier
 - `pnpm gen-envs` - Generate TypeScript types from environment variables
+- `pnpm clear` - Remove all build artifacts and dist folders
 
 ## API Endpoints
 
@@ -296,7 +309,7 @@ Endpoints are under `/api/cv`:
 - `POST /api/cv/analyze/signed-in` — requires auth
 - `POST /api/cv/analyze/premium` — requires premium subscription
 - `GET /api/cv/analysis/:id` — fetch analysis by id
-- `GET /api/cv/analysis-history/:id?cursor=...` — paginated history
+- `GET /api/cv/analysis-history/:id?page=1&limit=10` — paginated history (offset-based)
 
 Request format (for analyze endpoints):
 
