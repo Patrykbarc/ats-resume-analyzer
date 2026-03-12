@@ -112,16 +112,16 @@ export interface FileRoutesByFullPath {
   '/analyse/$id': typeof appAnalyseIdRoute
   '/verify/$token': typeof appVerifyTokenRoute
   '/reset-password/$id': typeof AuthResetPasswordIdRoute
-  '/account': typeof appAccountIndexRoute
-  '/checkout': typeof appCheckoutIndexRoute
-  '/pricing': typeof appPricingIndexRoute
-  '/privacy-policy': typeof appPrivacyPolicyIndexRoute
-  '/forgot-password': typeof AuthForgotPasswordIndexRoute
-  '/login': typeof AuthLoginIndexRoute
-  '/logout': typeof AuthLogoutIndexRoute
-  '/register': typeof AuthRegisterIndexRoute
-  '/checkout/cancel': typeof appCheckoutCancelIndexRoute
-  '/checkout/success': typeof appCheckoutSuccessIndexRoute
+  '/account/': typeof appAccountIndexRoute
+  '/checkout/': typeof appCheckoutIndexRoute
+  '/pricing/': typeof appPricingIndexRoute
+  '/privacy-policy/': typeof appPrivacyPolicyIndexRoute
+  '/forgot-password/': typeof AuthForgotPasswordIndexRoute
+  '/login/': typeof AuthLoginIndexRoute
+  '/logout/': typeof AuthLogoutIndexRoute
+  '/register/': typeof AuthRegisterIndexRoute
+  '/checkout/cancel/': typeof appCheckoutCancelIndexRoute
+  '/checkout/success/': typeof appCheckoutSuccessIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -167,16 +167,16 @@ export interface FileRouteTypes {
     | '/analyse/$id'
     | '/verify/$token'
     | '/reset-password/$id'
-    | '/account'
-    | '/checkout'
-    | '/pricing'
-    | '/privacy-policy'
-    | '/forgot-password'
-    | '/login'
-    | '/logout'
-    | '/register'
-    | '/checkout/cancel'
-    | '/checkout/success'
+    | '/account/'
+    | '/checkout/'
+    | '/pricing/'
+    | '/privacy-policy/'
+    | '/forgot-password/'
+    | '/login/'
+    | '/logout/'
+    | '/register/'
+    | '/checkout/cancel/'
+    | '/checkout/success/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -233,7 +233,7 @@ declare module '@tanstack/react-router' {
     '/_auth': {
       id: '/_auth'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -254,56 +254,56 @@ declare module '@tanstack/react-router' {
     '/_auth/register/': {
       id: '/_auth/register/'
       path: '/register'
-      fullPath: '/register'
+      fullPath: '/register/'
       preLoaderRoute: typeof AuthRegisterIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/logout/': {
       id: '/_auth/logout/'
       path: '/logout'
-      fullPath: '/logout'
+      fullPath: '/logout/'
       preLoaderRoute: typeof AuthLogoutIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/login/': {
       id: '/_auth/login/'
       path: '/login'
-      fullPath: '/login'
+      fullPath: '/login/'
       preLoaderRoute: typeof AuthLoginIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/forgot-password/': {
       id: '/_auth/forgot-password/'
       path: '/forgot-password'
-      fullPath: '/forgot-password'
+      fullPath: '/forgot-password/'
       preLoaderRoute: typeof AuthForgotPasswordIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/(app)/privacy-policy/': {
       id: '/(app)/privacy-policy/'
       path: '/privacy-policy'
-      fullPath: '/privacy-policy'
+      fullPath: '/privacy-policy/'
       preLoaderRoute: typeof appPrivacyPolicyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(app)/pricing/': {
       id: '/(app)/pricing/'
       path: '/pricing'
-      fullPath: '/pricing'
+      fullPath: '/pricing/'
       preLoaderRoute: typeof appPricingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(app)/checkout/': {
       id: '/(app)/checkout/'
       path: '/checkout'
-      fullPath: '/checkout'
+      fullPath: '/checkout/'
       preLoaderRoute: typeof appCheckoutIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(app)/account/': {
       id: '/(app)/account/'
       path: '/account'
-      fullPath: '/account'
+      fullPath: '/account/'
       preLoaderRoute: typeof appAccountIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -331,14 +331,14 @@ declare module '@tanstack/react-router' {
     '/(app)/checkout/success/': {
       id: '/(app)/checkout/success/'
       path: '/checkout/success'
-      fullPath: '/checkout/success'
+      fullPath: '/checkout/success/'
       preLoaderRoute: typeof appCheckoutSuccessIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(app)/checkout/cancel/': {
       id: '/(app)/checkout/cancel/'
       path: '/checkout/cancel'
-      fullPath: '/checkout/cancel'
+      fullPath: '/checkout/cancel/'
       preLoaderRoute: typeof appCheckoutCancelIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
