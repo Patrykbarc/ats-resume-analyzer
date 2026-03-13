@@ -33,7 +33,7 @@ export const Route = createFileRoute('/(app)/account/')({
 function RouteComponent() {
   const { data } = useQuery({
     queryKey: QUERY_KEYS.session.account,
-    queryFn: getUserAccountInformationsService,
+    queryFn: getUserAccountInformationsService
   })
 
   if (!data) {

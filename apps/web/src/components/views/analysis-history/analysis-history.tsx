@@ -82,7 +82,7 @@ export function AnalysisHistory() {
 
   const rows = table.getRowModel().rows
   const headers = table.getHeaderGroups()
-  
+
   return (
     <div className="space-y-4 bg-white border p-6 rounded-xl">
       <div className="space-y-2">

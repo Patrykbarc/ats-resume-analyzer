@@ -47,7 +47,8 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
 
   const shouldDisablePreview = user?.id === analysisOwner ? false : true
   const isOwner = !shouldDisablePreview
-  const { data: parsedFileData, isLoading: isParsedFileLoading } = useGetParsedFile(analysis.id, isOwner)
+  const { data: parsedFileData, isLoading: isParsedFileLoading } =
+    useGetParsedFile(analysis.id, isOwner)
 
   return (
     <Tabs className="space-y-6" defaultValue={TABS.analyse.value}>
@@ -109,7 +110,9 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
               {isParsedFileLoading ? (
                 <p className="text-muted-foreground">Loading preview...</p>
               ) : (
-                <p className="whitespace-pre-line">{parsedFileData?.parsed_file}</p>
+                <p className="whitespace-pre-line">
+                  {parsedFileData?.parsed_file}
+                </p>
               )}
             </CardContent>
           </Card>
