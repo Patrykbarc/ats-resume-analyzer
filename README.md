@@ -185,6 +185,40 @@ pnpm db:generate
 pnpm build
 ```
 
+## Architecture & Technology Decisions
+
+Key decisions made during development and the reasoning behind them:
+
+### pnpm Monorepo with Shared Packages
+
+A single pnpm workspace hosts both apps (`api`, `web`) and four shared packages (`database`, `types`, `schemas`, `constants`). This lets the Zod schemas that validate API request bodies be reused directly in the React forms — a single source of truth that eliminates drift between frontend validation and backend enforcement. The `pnpm catalogs` feature pins shared dependency versions (Zod, Stripe, TypeScript, etc.) across all packages without duplicating version strings.
+
+### TanStack Router over React Router
+
+TanStack Router provides file-based routing with full TypeScript inference for route params and search params. This avoids runtime `useParams()` / `useSearchParams()` casts and makes navigation type-safe end-to-end. The generated route tree is committed, so route changes are caught at compile time rather than at runtime.
+
+### Tiered AI Models (gpt-4.1-nano / o3)
+
+Free and signed-in analyses use `gpt-4.1-nano` (fast, low-cost). Premium analyses use `o3` (reasoning model, higher accuracy). The tier is determined server-side after verifying the subscription, so the model choice cannot be spoofed by the client.
+
+### OpenAI Responses API
+
+The backend uses the OpenAI **Responses API** (`openAiClient.responses.create`) rather than the legacy Chat Completions API. The Responses API returns a stable `id` alongside the output text, which is stored and used as the analysis record's primary key — enabling idempotent webhook re-delivery without duplicating records.
+
+### Vitest for Testing
+
+Vitest is ESM-native and shares configuration with the existing Vite/tsup build toolchain, eliminating the CJS/ESM transform issues that arise when using Jest with this stack. A single test runner covers both the Node.js API (`environment: 'node'`) and the React frontend (`environment: 'jsdom'`).
+
+### Express 5
+
+Express 5 is used for the API server. Compared to Express 4, async route handlers propagate thrown errors to the error middleware automatically — no need for `try/catch` wrappers or `next(err)` calls in every handler.
+
+### In-Memory Access Token Storage
+
+The JWT access token is stored in a module-level JavaScript variable (`tokenStorage.ts`) rather than `localStorage`. This eliminates XSS exposure: scripts injected on any page of the domain cannot read the token. Sessions survive tab navigation because the token lives in the JS heap. Page refresh re-hydrates the token silently via the `httpOnly` refresh token cookie (`POST /auth/refresh`), which is inaccessible to JavaScript.
+
+---
+
 ## Project Structure
 
 ```
