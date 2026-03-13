@@ -1,17 +1,20 @@
+import { apiClient } from '@/api/apiClient'
+import { clearToken, setToken } from '@/api/tokenStorage'
 import { useSessionStore } from '@/stores/session/useSessionStore'
-import { isAxiosError } from 'axios'
-import { StatusCodes } from 'http-status-codes'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useGetCurrentUser } from './useGetCurrentUser'
 
 export const useAuth = () => {
+  const [hasRefreshed, setHasRefreshed] = useState(false)
+
   const {
     data,
     error,
     isSuccess,
     isFetched,
     isLoading: queryLoading
-  } = useGetCurrentUser()
+  } = useGetCurrentUser({ enabled: hasRefreshed })
+
   const {
     setUser,
     setIsUserLoggedIn,
@@ -20,12 +23,24 @@ export const useAuth = () => {
     resetUserState
   } = useSessionStore()
 
-  const token = localStorage.getItem('jwtToken')
+  useEffect(() => {
+    const refreshSession = async () => {
+      try {
+        const response = await apiClient.post('/auth/refresh')
+        setToken(response.data.token)
+        setHasRefreshed(true)
+      } catch {
+        clearToken()
+        resetUserState()
+        setIsLoading(false)
+      }
+    }
+
+    refreshSession()
+  }, [resetUserState, setIsLoading])
 
   useEffect(() => {
-    if (!token) {
-      resetUserState()
-      setIsLoading(false)
+    if (!hasRefreshed) {
       return
     }
 
@@ -38,13 +53,6 @@ export const useAuth = () => {
         setIsPremium(data.isPremium)
       } else {
         resetUserState()
-
-        const isUnauthorized =
-          isAxiosError(error) &&
-          error.response?.status === StatusCodes.UNAUTHORIZED
-        if (isUnauthorized) {
-          localStorage.removeItem('jwtToken')
-        }
       }
     }
   }, [
@@ -53,7 +61,7 @@ export const useAuth = () => {
     queryLoading,
     data,
     error,
-    token,
+    hasRefreshed,
     setUser,
     setIsUserLoggedIn,
     setIsPremium,

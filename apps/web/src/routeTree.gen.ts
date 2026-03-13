@@ -8,102 +8,102 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
+import { Route as appAnalyseIdRouteImport } from './routes/(app)/analyse/$id'
+import { Route as appCheckoutCancelIndexRouteImport } from './routes/(app)/checkout/cancel/index'
+import { Route as appCheckoutIndexRouteImport } from './routes/(app)/checkout/index'
+import { Route as appCheckoutSuccessIndexRouteImport } from './routes/(app)/checkout/success/index'
+import { Route as appHistoryRouteRouteImport } from './routes/(app)/history/route'
+import { Route as appPricingIndexRouteImport } from './routes/(app)/pricing/index'
+import { Route as appPrivacyPolicyIndexRouteImport } from './routes/(app)/privacy-policy/index'
+import { Route as appVerifyTokenRouteImport } from './routes/(app)/verify/$token'
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
+import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
+import { Route as AuthLogoutIndexRouteImport } from './routes/_auth/logout/index'
+import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
+import { Route as AuthResetPasswordIdRouteImport } from './routes/_auth/reset-password/$id'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as appHistoryRouteRouteImport } from './routes/(app)/history/route'
-import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
-import { Route as AuthLogoutIndexRouteImport } from './routes/_auth/logout/index'
-import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
-import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
-import { Route as appPrivacyPolicyIndexRouteImport } from './routes/(app)/privacy-policy/index'
-import { Route as appPricingIndexRouteImport } from './routes/(app)/pricing/index'
-import { Route as appCheckoutIndexRouteImport } from './routes/(app)/checkout/index'
-import { Route as appAccountIndexRouteImport } from './routes/(app)/account/index'
-import { Route as AuthResetPasswordIdRouteImport } from './routes/_auth/reset-password/$id'
-import { Route as appVerifyTokenRouteImport } from './routes/(app)/verify/$token'
-import { Route as appAnalyseIdRouteImport } from './routes/(app)/analyse/$id'
-import { Route as appCheckoutSuccessIndexRouteImport } from './routes/(app)/checkout/success/index'
-import { Route as appCheckoutCancelIndexRouteImport } from './routes/(app)/checkout/cancel/index'
 
 const AuthRouteRoute = AuthRouteRouteImport.update({
   id: '/_auth',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appHistoryRouteRoute = appHistoryRouteRouteImport.update({
   id: '/(app)/history',
   path: '/history',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
   id: '/register/',
   path: '/register/',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AuthRouteRoute
 } as any)
 const AuthLogoutIndexRoute = AuthLogoutIndexRouteImport.update({
   id: '/logout/',
   path: '/logout/',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AuthRouteRoute
 } as any)
 const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AuthRouteRoute
 } as any)
 const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
   id: '/forgot-password/',
   path: '/forgot-password/',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AuthRouteRoute
 } as any)
 const appPrivacyPolicyIndexRoute = appPrivacyPolicyIndexRouteImport.update({
   id: '/(app)/privacy-policy/',
   path: '/privacy-policy/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appPricingIndexRoute = appPricingIndexRouteImport.update({
   id: '/(app)/pricing/',
   path: '/pricing/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appCheckoutIndexRoute = appCheckoutIndexRouteImport.update({
   id: '/(app)/checkout/',
   path: '/checkout/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appAccountIndexRoute = appAccountIndexRouteImport.update({
   id: '/(app)/account/',
   path: '/account/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const AuthResetPasswordIdRoute = AuthResetPasswordIdRouteImport.update({
   id: '/reset-password/$id',
   path: '/reset-password/$id',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AuthRouteRoute
 } as any)
 const appVerifyTokenRoute = appVerifyTokenRouteImport.update({
   id: '/(app)/verify/$token',
   path: '/verify/$token',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appAnalyseIdRoute = appAnalyseIdRouteImport.update({
   id: '/(app)/analyse/$id',
   path: '/analyse/$id',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appCheckoutSuccessIndexRoute = appCheckoutSuccessIndexRouteImport.update({
   id: '/(app)/checkout/success/',
   path: '/checkout/success/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 const appCheckoutCancelIndexRoute = appCheckoutCancelIndexRouteImport.update({
   id: '/(app)/checkout/cancel/',
   path: '/checkout/cancel/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => rootRouteImport
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -358,11 +358,11 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthForgotPasswordIndexRoute: AuthForgotPasswordIndexRoute,
   AuthLoginIndexRoute: AuthLoginIndexRoute,
   AuthLogoutIndexRoute: AuthLogoutIndexRoute,
-  AuthRegisterIndexRoute: AuthRegisterIndexRoute,
+  AuthRegisterIndexRoute: AuthRegisterIndexRoute
 }
 
 const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
-  AuthRouteRouteChildren,
+  AuthRouteRouteChildren
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -376,7 +376,7 @@ const rootRouteChildren: RootRouteChildren = {
   appPricingIndexRoute: appPricingIndexRoute,
   appPrivacyPolicyIndexRoute: appPrivacyPolicyIndexRoute,
   appCheckoutCancelIndexRoute: appCheckoutCancelIndexRoute,
-  appCheckoutSuccessIndexRoute: appCheckoutSuccessIndexRoute,
+  appCheckoutSuccessIndexRoute: appCheckoutSuccessIndexRoute
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

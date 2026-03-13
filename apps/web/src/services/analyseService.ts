@@ -54,8 +54,12 @@ export const getAnalysis = async (id: string) => {
   return response
 }
 
-export const getParsedFile = async (id: string): Promise<ParsedFileResponse> => {
-  const response = await apiClient.get<ParsedFileResponse>(`/cv/analysis/${id}/parsed-file`)
+export const getParsedFile = async (
+  id: string
+): Promise<ParsedFileResponse> => {
+  const response = await apiClient.get<ParsedFileResponse>(
+    `/cv/analysis/${id}/parsed-file`
+  )
   return response.data
 }
 

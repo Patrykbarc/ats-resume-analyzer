@@ -1,3 +1,4 @@
+import { clearToken, getToken, setToken } from '@/api/tokenStorage'
 import { getEnvs } from '@/lib/getEnv'
 import { AuthErrorCodes } from '@monorepo/types'
 import axios, {
@@ -35,7 +36,7 @@ const processQueue = (
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('jwtToken')
+    const token = getToken()
 
     if (token) {
       if (!config.headers.Authorization) {
@@ -89,7 +90,7 @@ apiClient.interceptors.response.use(
         const refreshResponse = await apiClient.post('/auth/refresh')
         const newAccessToken = refreshResponse.data.token
 
-        localStorage.setItem('jwtToken', newAccessToken)
+        setToken(newAccessToken)
 
         isRefreshing = false
         processQueue(null, newAccessToken)
@@ -98,7 +99,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError: unknown) {
         isRefreshing = false
-        localStorage.removeItem('jwtToken')
+        clearToken()
 
         if (isAxiosError(refreshError)) {
           processQueue(refreshError)

@@ -1,3 +1,4 @@
+import { clearToken, setToken } from '@/api/tokenStorage'
 import { CurrentUser } from '@/hooks/useGetCurrentUser'
 import { create, StoreApi, UseBoundStore } from 'zustand'
 
@@ -19,7 +20,7 @@ export type SessionStoreReturnType = UseBoundStore<StoreApi<SessionState>>
 
 const state = {
   user: null,
-  authToken: localStorage.getItem('jwtToken'),
+  authToken: null,
   isUserLoggedIn: false,
   isPremium: false,
   isLoading: true
@@ -32,9 +33,9 @@ export const useSessionStore = create(
     setUser: (user) => set({ user }),
     setAuthToken: (token) => {
       if (token) {
-        localStorage.setItem('jwtToken', token)
+        setToken(token)
       } else {
-        localStorage.removeItem('jwtToken')
+        clearToken()
       }
       set({ authToken: token, user: null })
     },
@@ -42,11 +43,13 @@ export const useSessionStore = create(
     setIsPremium: (premium) => set({ isPremium: premium }),
     setIsLoading: (loading) => set({ isLoading: loading }),
 
-    resetUserState: () =>
+    resetUserState: () => {
+      clearToken()
       set({
         user: null,
         isUserLoggedIn: false,
         isPremium: false
       })
+    }
   })
 )

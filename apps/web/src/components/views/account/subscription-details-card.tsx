@@ -21,10 +21,8 @@ export function SubscriptionDetailsCard({
   subscriptionStatus,
   cancelAtPeriodEnd
 }: UserBillingInformation) {
-  const isCanceled =
-    subscriptionStatus === 'canceled' && !cancelAtPeriodEnd
-  const isPendingCancel =
-    subscriptionStatus === 'active' && cancelAtPeriodEnd
+  const isCanceled = subscriptionStatus === 'canceled' && !cancelAtPeriodEnd
+  const isPendingCancel = subscriptionStatus === 'active' && cancelAtPeriodEnd
 
   return (
     <Card>

@@ -92,7 +92,10 @@ type ParsedFile = {
   has_more: boolean
 }
 
-export const getAnalysis = async (req: Request<{ id: string }>, res: Response) => {
+export const getAnalysis = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
   const { id } = req.params
 
   try {
@@ -109,7 +112,9 @@ export const getAnalysis = async (req: Request<{ id: string }>, res: Response) =
           }
         }
       }),
-      openAiClient.responses.retrieve(id).then(res => ({ id: res.id, output_text: res.output_text }))
+      openAiClient.responses
+        .retrieve(id)
+        .then((res) => ({ id: res.id, output_text: res.output_text }))
     ])
 
     const parsedResponse = parseOpenAiApiResponse(response)
@@ -122,7 +127,10 @@ export const getAnalysis = async (req: Request<{ id: string }>, res: Response) =
   }
 }
 
-export const getParsedFile = async (req: Request<{ id: string }>, res: Response) => {
+export const getParsedFile = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
   const { id } = req.params
   const requestingUser = req.user as UserSchemaType
 
@@ -151,7 +159,10 @@ export const getParsedFile = async (req: Request<{ id: string }>, res: Response)
   }
 }
 
-export const getAnalysisHistory = async (req: Request<{ id: string }>, res: Response) => {
+export const getAnalysisHistory = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
   const { id } = req.params
   const { limit, page } = req.query
 

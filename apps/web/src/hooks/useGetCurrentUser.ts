@@ -1,3 +1,4 @@
+import { getToken } from '@/api/tokenStorage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { getCurrentUserService } from '@/services/authService'
 import { UserSchemaType } from '@monorepo/schemas'
@@ -7,14 +8,12 @@ const FIVE_MINUTES = 5 * 60 * 1000
 
 export type CurrentUser = Pick<UserSchemaType, 'id' | 'email' | 'isPremium'>
 
-export const useGetCurrentUser = () => {
-  const token = localStorage.getItem('jwtToken')
-
+export const useGetCurrentUser = (options?: { enabled?: boolean }) => {
   return useQuery<CurrentUser | null>({
     queryKey: QUERY_KEYS.session.currentUser,
     queryFn: getCurrentUserService,
     retry: false,
     staleTime: FIVE_MINUTES,
-    enabled: !!token
+    enabled: options?.enabled ?? !!getToken()
   })
 }

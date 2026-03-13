@@ -165,7 +165,8 @@ export const cancelSubscription = async (req: Request, res: Response) => {
 
     logger.info(`Subscription for user ${id} set to cancel at period end.`)
 
-    const currentPeriodEnd = updatedSubscription.items.data[0]?.current_period_end
+    const currentPeriodEnd =
+      updatedSubscription.items.data[0]?.current_period_end
 
     await prisma.user.update({
       where: { id },

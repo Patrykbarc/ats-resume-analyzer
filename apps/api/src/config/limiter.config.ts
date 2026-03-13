@@ -35,4 +35,20 @@ const authAttemptLimiter = rateLimit({
   validate: { trustProxy: false }
 })
 
-export { analyzeLimiter, authAttemptLimiter, requestLimiter }
+const userAnalyzeLimiter = rateLimit({
+  windowMs: DAY,
+  max: NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY,
+  message: {
+    error: 'The limit of analyses has been reached.'
+  },
+  validate: { trustProxy: false },
+  keyGenerator: (req) =>
+    (req.user as { id?: string } | undefined)?.id ?? req.ip ?? 'unknown'
+})
+
+export {
+  analyzeLimiter,
+  authAttemptLimiter,
+  requestLimiter,
+  userAnalyzeLimiter
+}

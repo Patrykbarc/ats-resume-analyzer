@@ -29,6 +29,5 @@ export const ENV_NAMES = [
   'EMAIL_SENDER',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  'CRON_SECRET_KEY',
+  'CRON_SECRET_KEY'
 ] as const
-

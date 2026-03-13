@@ -5,7 +5,7 @@ import {
 } from '@monorepo/schemas'
 import { Router } from 'express'
 import multer from 'multer'
-import { analyzeLimiter } from '../config/limiter.config'
+import { analyzeLimiter, userAnalyzeLimiter } from '../config/limiter.config'
 import {
   createAnalyze,
   getAnalysis,
@@ -31,6 +31,7 @@ router.post(
 router.post(
   '/analyze/signed-in',
   requireAuth,
+  userAnalyzeLimiter,
   multipartParser,
   validateFile(FileSchema),
   createAnalyze
@@ -39,6 +40,7 @@ router.post(
   '/analyze/premium',
   requireAuth,
   requirePremium,
+  userAnalyzeLimiter,
   multipartParser,
   validateFile(FileSchema),
   createAnalyze

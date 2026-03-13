@@ -27,7 +27,9 @@ export const requireAuth = (
             message: AuthErrorCodes.ACCESS_TOKEN_EXPIRED
           })
         }
-        return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Unauthorized' })
+        return res
+          .status(StatusCodes.UNAUTHORIZED)
+          .json({ message: 'Unauthorized' })
       }
 
       req.user = user

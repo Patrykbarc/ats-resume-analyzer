@@ -29,7 +29,8 @@
     "db:reset": "pnpm --filter @monorepo/database run db:reset",
     "generate:env-api": "node ./scripts/generate-env-types.mjs ./apps/api",
     "generate:env-web": "node ./scripts/generate-env-types.mjs ./apps/web",
-    "gen-envs": "pnpm generate:env-api && pnpm generate:env-web"
+    "gen-envs": "pnpm generate:env-api && pnpm generate:env-web",
+    "test": "pnpm -r test"
   },
   "keywords": [],
   "author": "",
