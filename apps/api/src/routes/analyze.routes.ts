@@ -45,7 +45,12 @@ router.post(
 )
 
 router.get('/analysis/:id', validateData(AnalysisParamsSchema), getAnalysis)
-router.get('/analysis/:id/parsed-file', requireAuth, validateData(AnalysisParamsSchema), getParsedFile)
+router.get(
+  '/analysis/:id/parsed-file',
+  requireAuth,
+  validateData(AnalysisParamsSchema),
+  getParsedFile
+)
 
 router.get(
   '/analysis-history/:id',
