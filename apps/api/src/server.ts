@@ -1,3 +1,4 @@
+import './config/instrument.config'
 import { PrismaClient } from '@monorepo/database'
 import axios, { isAxiosError } from 'axios'
 import { StatusCodes } from 'http-status-codes'

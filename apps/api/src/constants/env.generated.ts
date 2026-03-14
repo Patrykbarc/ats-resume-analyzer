@@ -14,6 +14,8 @@ export type EnvironmentVariables = {
   STRIPE_SECRET_KEY: string
   STRIPE_WEBHOOK_SECRET: string
   CRON_SECRET_KEY: string
+  STRIPE_PRICE_ID: string
+  SENTRY_DSN: string
 }
 
 export const ENV_NAMES = [
@@ -29,5 +31,8 @@ export const ENV_NAMES = [
   'EMAIL_SENDER',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  'CRON_SECRET_KEY'
+  'CRON_SECRET_KEY',
+  'STRIPE_PRICE_ID',
+  'SENTRY_DSN',
 ] as const
+
