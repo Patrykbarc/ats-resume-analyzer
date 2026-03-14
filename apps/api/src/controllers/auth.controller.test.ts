@@ -26,7 +26,8 @@ vi.mock('./helper/auth/createNewUser', () => ({
 }))
 
 vi.mock('./helper/auth/handleNewJwtTokens', () => ({
-  handleNewJwtTokens: vi.fn(() => Promise.resolve('mocked-access-token'))
+  handleNewJwtTokens: vi.fn(() => Promise.resolve('mocked-access-token')),
+  jwtRefreshCookieOptions: vi.fn(() => ({ httpOnly: true, secure: false, sameSite: 'lax' }))
 }))
 
 vi.mock('./helper/auth/verifyIsTokenExpired', () => ({

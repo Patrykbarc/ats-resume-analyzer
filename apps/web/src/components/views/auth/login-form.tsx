@@ -8,6 +8,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useLoginMutation } from '@/hooks/useLoginMutation'
+import { getCurrentUserService } from '@/services/authService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { LoginUserSchema, LoginUserSchemaType } from '@monorepo/schemas'
 import { useForm } from '@tanstack/react-form'
@@ -35,15 +36,25 @@ const FORM_FIELDS: AuthFormFields<LoginUserSchemaType>[] = [
 export function LoginForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { setAuthToken } = useSessionStore()
+  const { setAuthToken, setUser, setIsUserLoggedIn, setIsPremium } =
+    useSessionStore()
 
   const { mutate, isPending, isSuccess, error } = useLoginMutation({
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       const token = response.data.token
       setAuthToken(token)
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.session.currentUser
+
+      const userData = await queryClient.fetchQuery({
+        queryKey: QUERY_KEYS.session.currentUser,
+        queryFn: getCurrentUserService
       })
+
+      if (userData) {
+        setUser(userData)
+        setIsUserLoggedIn(true)
+        setIsPremium(userData.isPremium)
+      }
+
       toast.success('Logged in successfully!')
       navigate({ to: '/' })
     }
