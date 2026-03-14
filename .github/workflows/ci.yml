@@ -55,4 +55,4 @@ jobs:
       - name: 'notify vercel'
         uses: 'vercel/repository-dispatch/actions/status@v1'
         with:
-          name: Vercel - ats-resume-analyzer-web: lint
+          name: 'Vercel - ats-resume-analyzer-web: main-rules'
