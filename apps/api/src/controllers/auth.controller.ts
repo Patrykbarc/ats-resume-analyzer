@@ -2,7 +2,7 @@ import * as bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { getEnvs } from '../lib/getEnv'
-import { prisma } from '../server'
+import { logger, prisma } from '../server'
 import {
   sendPasswordResetEmail,
   sendRegisterConfirmationEmail
@@ -75,7 +75,7 @@ export const registerUser = async (req: Request, res: Response) => {
         confirmationToken
       })
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError)
+      logger.error(`Failed to send confirmation email: ${emailError}`)
 
       return res.status(StatusCodes.CREATED).json({
         message:

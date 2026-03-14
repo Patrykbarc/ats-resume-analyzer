@@ -1,5 +1,5 @@
 import { FREE_REQUESTS_PER_DAY } from '@monorepo/constants'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { getEnvs } from '../lib/getEnv'
 
 const THIRTY_SECONDS_IN_MS = 30 * 1000
@@ -14,7 +14,7 @@ const requestLimiter = rateLimit({
   message: {
     error: 'Too many requests, please try again later.'
   },
-  validate: { trustProxy: false }
+  validate: { trustProxy: true }
 })
 
 const analyzeLimiter = rateLimit({
@@ -23,7 +23,7 @@ const analyzeLimiter = rateLimit({
   message: {
     error: 'The limit of analyses has been reached.'
   },
-  validate: { trustProxy: false }
+  validate: { trustProxy: true }
 })
 
 const authAttemptLimiter = rateLimit({
@@ -32,7 +32,7 @@ const authAttemptLimiter = rateLimit({
   message: {
     error: 'Too many attempts, please try again later.'
   },
-  validate: { trustProxy: false }
+  validate: { trustProxy: true }
 })
 
 const userAnalyzeLimiter = rateLimit({
@@ -41,9 +41,10 @@ const userAnalyzeLimiter = rateLimit({
   message: {
     error: 'The limit of analyses has been reached.'
   },
-  validate: { trustProxy: false },
+  validate: { trustProxy: true },
   keyGenerator: (req) =>
-    (req.user as { id?: string } | undefined)?.id ?? req.ip ?? 'unknown'
+    (req.user as { id?: string } | undefined)?.id ??
+    ipKeyGenerator(req.ip ?? 'unknown')
 })
 
 export {
