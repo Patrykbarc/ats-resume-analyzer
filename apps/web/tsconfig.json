@@ -1,6 +1,11 @@
 {
   "extends": ["@tsconfig/vite-react/tsconfig.json", "../../tsconfig.base.json"],
-  "include": ["src", "vite-env.d.ts", "./src/routes/__root.tsx", "vitest.config.ts"],
+  "include": [
+    "src",
+    "vite-env.d.ts",
+    "./src/routes/__root.tsx",
+    "vitest.config.ts"
+  ],
 
   "compilerOptions": {
     "lib": ["DOM", "ES2021"],

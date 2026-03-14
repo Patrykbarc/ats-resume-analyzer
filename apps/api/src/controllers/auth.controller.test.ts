@@ -1,16 +1,6 @@
-import type { Request, Response } from 'express'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../server', () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn()
-    }
-  },
-  logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
-}))
+vi.mock('../server')
 
 vi.mock('bcryptjs', () => ({
   compare: vi.fn(),
@@ -24,14 +14,7 @@ vi.mock('jsonwebtoken', () => ({
   }
 }))
 
-vi.mock('../lib/getEnv', () => ({
-  getEnvs: vi.fn(() => ({
-    JWT_SECRET: 'test-secret',
-    JWT_REFRESH_SECRET: 'test-refresh-secret',
-    NODE_ENV: 'test',
-    FRONTEND_URL: 'http://localhost:3000'
-  }))
-}))
+vi.mock('../lib/getEnv')
 
 vi.mock('../services/email.service', () => ({
   sendRegisterConfirmationEmail: vi.fn(),
@@ -58,30 +41,10 @@ import * as bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../server'
 import { sendRegisterConfirmationEmail } from '../services/email.service'
+import { makeReq, makeRes } from '../test/helpers'
 import { loginUser, refreshToken, registerUser } from './auth.controller'
 import { createNewUser } from './helper/auth/createNewUser'
 import { handleNewJwtTokens } from './helper/auth/handleNewJwtTokens'
-
-const makeReq = (overrides: Partial<Request> = {}): Request =>
-  ({
-    body: {},
-    cookies: {},
-    headers: {},
-    query: {},
-    params: {},
-    ...overrides
-  }) as Request
-
-const makeRes = (): Response => {
-  const res = {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-    clearCookie: vi.fn().mockReturnThis(),
-    cookie: vi.fn().mockReturnThis()
-  }
-  return res as unknown as Response
-}
 
 describe('loginUser', () => {
   beforeEach(() => vi.clearAllMocks())

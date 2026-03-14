@@ -1,0 +1,30 @@
+import { vi } from 'vitest'
+
+export const prisma = {
+  user: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn()
+  },
+  requestLog: {
+    findMany: vi.fn(),
+    count: vi.fn()
+  }
+}
+
+export const logger = {
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  fatal: vi.fn()
+}
+
+export const openAiClient = {
+  responses: {
+    retrieve: vi.fn(),
+    inputItems: {
+      list: vi.fn()
+    }
+  }
+}

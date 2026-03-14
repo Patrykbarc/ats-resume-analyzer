@@ -1,14 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../server', () => ({
-  logger: {
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn()
-  },
-  prisma: {},
-  openAiClient: {}
-}))
+vi.mock('../../../server')
 
 import type { AnalyseApiResponse } from './analyzeFile'
 import { parseOpenAiApiResponse } from './parseOpenAiApiResponse'
