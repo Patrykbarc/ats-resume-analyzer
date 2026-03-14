@@ -8,7 +8,7 @@ import { corsOptions } from '../config/cors.config'
 import { routes } from '../routes/routes'
 import { middlewareErrorHandler } from './error-handler.middleware'
 
-export const middleware = (app: Application) => {
+const middleware = (app: Application) => {
   app.use(helmet())
   app.use(cors(corsOptions))
   app.use(logger('dev'))

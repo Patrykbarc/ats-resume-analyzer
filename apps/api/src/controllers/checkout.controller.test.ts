@@ -1,4 +1,3 @@
-import type { Request, Response } from 'express'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockStripe = vi.hoisted(() => ({
@@ -21,26 +20,9 @@ vi.mock('stripe', () => ({
   default: vi.fn(() => mockStripe)
 }))
 
-vi.mock('../server', () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      update: vi.fn()
-    }
-  },
-  logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
-}))
+vi.mock('../server')
 
-vi.mock('../lib/getEnv', () => ({
-  getEnvs: vi.fn(() => ({
-    STRIPE_SECRET_KEY: 'test-stripe-key',
-    STRIPE_WEBHOOK_SECRET: 'test-webhook-secret',
-    FRONTEND_URL: 'http://localhost:3000',
-    JWT_SECRET: 'test-jwt-secret',
-    JWT_REFRESH_SECRET: 'test-jwt-refresh-secret',
-    NODE_ENV: 'test'
-  }))
-}))
+vi.mock('../lib/getEnv')
 
 vi.mock('./helper/checkout/handleCheckoutSessionCompleted', () => ({
   handleCheckoutSessionCompleted: vi.fn()
@@ -67,30 +49,9 @@ vi.mock('../lib/isStripeError', () => ({
 }))
 
 import { prisma } from '../server'
+import { makeReq, makeRes } from '../test/helpers'
 import { cancelSubscription, stripeWebhookHandler } from './checkout.controller'
 import { handleCheckoutSessionCompleted } from './helper/checkout/handleCheckoutSessionCompleted'
-
-const makeReq = (overrides: Partial<Request> = {}): Request =>
-  ({
-    body: {},
-    cookies: {},
-    headers: {},
-    query: {},
-    params: {},
-    user: undefined,
-    ...overrides
-  }) as unknown as Request
-
-const makeRes = (): Response => {
-  const res = {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-    clearCookie: vi.fn().mockReturnThis(),
-    cookie: vi.fn().mockReturnThis()
-  }
-  return res as unknown as Response
-}
 
 describe('stripeWebhookHandler', () => {
   beforeEach(() => vi.clearAllMocks())
