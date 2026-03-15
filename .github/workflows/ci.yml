@@ -10,7 +10,7 @@ on:
 
 jobs:
   ci:
-    name: Lint, Type-check, Test & Build
+    name: Lint, Type-check, Test, Test:e2e & Build
     runs-on: ubuntu-latest
     permissions:
       statuses: write
@@ -50,6 +50,9 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Test:e2e
+        run: pnpm test:e2e
 
       - name: Build
         run: pnpm build

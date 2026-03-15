@@ -30,7 +30,8 @@
     "generate:env-api": "node ./scripts/generate-env-types.mjs ./apps/api",
     "generate:env-web": "node ./scripts/generate-env-types.mjs ./apps/web",
     "gen-envs": "pnpm generate:env-api && pnpm generate:env-web",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @monorepo/web run test:e2e"
   },
   "keywords": [],
   "author": "",
