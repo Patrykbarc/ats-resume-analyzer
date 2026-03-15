@@ -10,7 +10,7 @@ on:
 
 jobs:
   ci:
-    name: Lint, Type-check, Test, Test:e2e & Build
+    name: Lint, Type-check, Test & Build
     runs-on: ubuntu-latest
     permissions:
       statuses: write
@@ -54,7 +54,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @monorepo/web exec playwright install --with-deps chromium
 
-      - name: Test:e2e
+      - name: Test end-to-end
         run: pnpm test:e2e
         env:
           VITE_NODE_ENV: test
