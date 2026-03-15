@@ -1,6 +1,9 @@
 import { FREE_REQUESTS_PER_DAY } from '@monorepo/constants'
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator, MemoryStore } from 'express-rate-limit'
 import { getEnvs } from '../lib/getEnv'
+
+export const analyzeStore = new MemoryStore()
+export const userAnalyzeStore = new MemoryStore()
 
 const THIRTY_SECONDS_IN_MS = 30 * 1000
 const QUARTER_HOUR = 15 * 60 * 1000
@@ -18,6 +21,7 @@ const requestLimiter = rateLimit({
 })
 
 const analyzeLimiter = rateLimit({
+  store: analyzeStore,
   windowMs: DAY,
   max: NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY,
   message: {
@@ -36,6 +40,7 @@ const authAttemptLimiter = rateLimit({
 })
 
 const userAnalyzeLimiter = rateLimit({
+  store: userAnalyzeStore,
   windowMs: DAY,
   max: NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY,
   message: {
@@ -50,6 +55,7 @@ const userAnalyzeLimiter = rateLimit({
 export {
   analyzeLimiter,
   authAttemptLimiter,
+  ipKeyGenerator,
   requestLimiter,
   userAnalyzeLimiter
 }

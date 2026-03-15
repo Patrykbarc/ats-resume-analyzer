@@ -52,7 +52,7 @@ export function AnalyzeFile({
           )}
         </Button>
 
-        <Button onClick={handleReset} variant="outline" disabled={analyzing}>
+        <Button onClick={handleReset} variant="outline">
           Cancel
         </Button>
       </div>

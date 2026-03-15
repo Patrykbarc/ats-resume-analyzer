@@ -1,0 +1,14 @@
+{
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2021",
+    "customConditions": ["source"],
+    "moduleResolution": "bundler",
+    "module": "preserve",
+    "declaration": true,
+    "declarationDir": "dist",
+    "outDir": "dist",
+    "composite": false
+  },
+  "include": ["src/**/*.ts", "tsup.config.ts"]
+}

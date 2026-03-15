@@ -3,6 +3,7 @@ import { useCheckoutMutation } from '@/hooks/checkout/useCheckoutMutation'
 import { cn } from '@/lib/utils'
 import { PricingPlan } from '@/routes/(app)/pricing'
 import { useSessionStore } from '@/stores/session/useSessionStore'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useNavigate } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
 
@@ -23,6 +24,9 @@ export function PricingCard({
       if (url) {
         window.location.href = url
       }
+    },
+    onError: (err) => {
+      sentryLogger.unexpected(err)
     }
   })
 

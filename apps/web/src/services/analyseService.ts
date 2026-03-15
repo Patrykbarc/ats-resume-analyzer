@@ -18,11 +18,13 @@ export type AnalyseResult = AxiosResponse<AnalysisDetails>
 export const submitAnalyseResume = async ({
   file,
   isPremium,
-  userId
+  userId,
+  signal
 }: {
   file: File
   isPremium: boolean
   userId?: User['id']
+  signal?: AbortSignal
 }): Promise<AnalyseResult> => {
   const formData = new FormData()
   formData.append('file', file)
@@ -42,7 +44,8 @@ export const submitAnalyseResume = async ({
   const response = await apiClient.post<AiAnalysis>(route(), formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    signal
   })
 
   return response

@@ -1,7 +1,16 @@
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import OpenAI from 'openai'
 import { logger } from '../../server'
+
+const EXPECTED_STATUSES = [
+  StatusCodes.NOT_FOUND,
+  StatusCodes.BAD_REQUEST,
+  StatusCodes.UNAUTHORIZED,
+  StatusCodes.FORBIDDEN,
+  StatusCodes.TOO_MANY_REQUESTS
+]
 
 export function handleError(error: unknown, res: Response) {
   logger.error(`An error occured: ${error}`)
@@ -12,6 +21,12 @@ export function handleError(error: unknown, res: Response) {
     logger.error(message)
 
     const statusCode = status || StatusCodes.INTERNAL_SERVER_ERROR
+
+    if (EXPECTED_STATUSES.includes(status)) {
+      sentryLogger.expected(error, { context: 'OpenAI API error', status })
+    } else {
+      sentryLogger.unexpected(error, { context: 'OpenAI API error', status })
+    }
 
     switch (status) {
       case StatusCodes.NOT_FOUND:
@@ -42,6 +57,8 @@ export function handleError(error: unknown, res: Response) {
         })
     }
   }
+
+  sentryLogger.unexpected(error, { context: 'handleError fallthrough' })
 
   res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
     status: StatusCodes.INTERNAL_SERVER_ERROR,

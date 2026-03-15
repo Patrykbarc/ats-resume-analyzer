@@ -9,6 +9,7 @@ import {
 } from '@/lib/rateLimits'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { FileSchemaInput } from '@monorepo/schemas'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useNavigate } from '@tanstack/react-router'
 import { AxiosResponse, isAxiosError } from 'axios'
 import { ChangeEvent, useCallback, useState } from 'react'
@@ -21,7 +22,7 @@ export const useAnalyzer = () => {
   const { setRequestsLeft, setRequestsCooldown, isCooldownActive } =
     useRateLimit()
 
-  const { mutate, isPending, error } = useAnalyseResumeMutation({
+  const { mutate, isPending, error, abort } = useAnalyseResumeMutation({
     onSuccess: (response) => {
       updateRequestLimit(response)
       setValidationError(null)
@@ -35,10 +36,18 @@ export const useAnalyzer = () => {
       navigate({ to: `/analyse/${response.data.id}` })
     },
     onError: (err) => {
+      if (isAxiosError(err) && err.code === 'ERR_CANCELED') {
+        return
+      }
+
       if (isAxiosError(err) && isRateLimitError(err)) {
         const timestamp = getHeadersRateLimitReset(err.response)
         setRequestsCooldown(timestamp)
+        sentryLogger.expected(err, { context: 'rate limit during analysis' })
+        return
       }
+
+      sentryLogger.unexpected(err, { context: 'analysis mutation error' })
     }
   })
 
@@ -68,9 +77,10 @@ export const useAnalyzer = () => {
   }, [file, mutate])
 
   const handleReset = useCallback(() => {
+    abort()
     setFile(null)
     setValidationError(null)
-  }, [])
+  }, [abort])
 
   const updateRequestLimit = useCallback(
     (response: AxiosResponse) => {
