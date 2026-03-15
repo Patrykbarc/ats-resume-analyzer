@@ -4,6 +4,52 @@ An intelligent web application that analyzes resumes for compatibility with Appl
 
 🚀 **Live Demo**: [https://ats-scan.patrykbarc.com/](https://ats-scan.patrykbarc.com/)
 
+## Architecture
+
+```mermaid
+graph TD
+  subgraph Client
+    Browser
+  end
+
+  subgraph Vercel
+    Web["Web (React + TanStack Router)"]
+  end
+
+  subgraph Render
+    API["API"]
+  end
+
+  subgraph External
+    OpenAI["OpenAI (gpt-4.1-nano / o3)"]
+    Stripe
+    Resend["Resend (email)"]
+    Sentry["Sentry (errors)"]
+  end
+
+  subgraph Data
+    DB[(PostgreSQL / Prisma)]
+  end
+
+  subgraph "Monorepo Packages"
+    Schemas["@monorepo/schemas"]
+    Types["@monorepo/types"]
+    Database["@monorepo/database (Prisma client)"]
+  end
+
+  Browser --> Web
+  Web -->|"REST (axios + httpOnly cookie)"| API
+  API --> DB
+  API --> OpenAI
+  API --> Stripe
+  API --> Resend
+  API --> Sentry
+  Web --> Sentry
+  Schemas -.->|"shared validation"| Web
+  Schemas -.->|"shared validation"| API
+  Database -.-> API
+```
+
 ## Features
 
 - 📄 PDF resume parsing and analysis
@@ -25,7 +71,7 @@ An intelligent web application that analyzes resumes for compatibility with Appl
 - TypeScript
 - Vite
 - Tailwind CSS 4
-- TanStack Router & React Query
+- TanStack Router & Query
 - Zustand (state management)
 - Shadcn UI
 - Axios
@@ -362,7 +408,7 @@ Endpoints are under `/api/cv`:
 - `POST /api/cv/analyze/signed-in` — requires auth
 - `POST /api/cv/analyze/premium` — requires premium subscription
 - `GET /api/cv/analysis/:id` — fetch analysis by id
-- `GET /api/cv/analysis-history/:id?page=1&limit=10` — paginated history (offset-based)
+- `GET /api/cv/analysis-history/:id?cursor=<analyseId>&limit=10` — paginated history (cursor-based)
 
 Request format (for analyze endpoints):
 
@@ -395,6 +441,43 @@ Check API health status.
    - Strengths and weaknesses
    - Actionable recommendations
    - Keyword optimization suggestions
+
+## Development Story
+
+### The Problem
+
+Applicant Tracking Systems are opaque by design — candidates submit resumes and receive no feedback on why they were filtered out. This project was built to give candidates visibility into how ATS algorithms interpret their resume and actionable steps to improve their chances before applying.
+
+### Core Decisions
+
+**Tiered AI models** — Free and signed-in analyses use `gpt-4.1-nano` (fast, low-cost). Premium analyses use `o3` (OpenAI's reasoning model, higher accuracy). The tier is resolved server-side after verifying the Stripe subscription, so the model choice cannot be spoofed by the client.
+
+**Monorepo shared schemas** — A single `@monorepo/schemas` package containing Zod schemas is imported by both the React frontend (form validation) and the Express backend (request validation middleware). This eliminates the class of bugs where frontend and backend silently diverge on what a valid request looks like.
+
+**In-memory JWT storage** — The access token lives in a module-level JavaScript variable rather than `localStorage`. Any XSS payload can read `localStorage`, but it cannot reach a plain JS variable in another module. Page refreshes re-hydrate the token silently via the `httpOnly` refresh-token cookie (`POST /auth/refresh`), which is inaccessible to JavaScript entirely.
+
+**OpenAI Responses API with idempotent storage** — The Responses API returns a stable `id` alongside the output text. This ID is stored as the analysis record's primary key, so webhook re-delivery or duplicate client requests cannot create duplicate records.
+
+**Cursor-based pagination** — The analysis history endpoint uses cursor pagination (`analyseId` as the cursor, ordered by `createdAt desc`) rather than offset pagination. Offset pagination becomes slow at large offsets and returns inconsistent results when new items are inserted between pages. The cursor approach stays O(log n) and stable regardless of concurrent writes.
+
+**Services layer** — Business logic (DB queries, Stripe calls, OpenAI lookups) lives in `services/`, while controllers only parse requests and send responses. This separation makes the business logic unit-testable without spinning up Express.
+
+### Challenges
+
+**Stripe webhook idempotency** — Stripe can deliver the same webhook event more than once. The `handleCheckoutSessionCompleted` handler is safe to re-run: it checks whether the subscription is already active before writing to the database, preventing duplicate premium grants on re-delivery.
+
+**XSS-safe token storage** — Storing the JWT in a JS module variable (rather than `localStorage` or a non-`httpOnly` cookie) required building a silent refresh mechanism. On every page load, the React app calls `POST /auth/refresh` using the `httpOnly` cookie; if the cookie is valid the server returns a fresh access token and the user session is restored seamlessly.
+
+**ESM/CJS in the monorepo** — The shared packages are built to both ESM and CJS targets via `tsup`. Without this, the Node.js API (CJS at runtime) and the Vite-built frontend (ESM) would fail to resolve the same package. `pnpm catalogs` pins the exact version of each shared dependency across all workspaces without duplicating version strings.
+
+### What Would Change at Scale
+
+- **Job queue** — AI analysis is handled inline in the HTTP request lifecycle. At scale this would move to a queue (e.g., BullMQ backed by Redis) so the response returns immediately and the client polls or receives a webhook when the analysis is ready.
+- **Redis for rate limiting** — The current in-memory rate limiter is per-instance and resets on deploy. Redis-backed limiting would be shared across multiple API instances.
+- **Read replicas** — The analysis history query runs against the primary database. Under high read volume, a read replica would offload these queries and keep write latency predictable.
+- **Persistent file storage** — Uploaded PDFs are currently parsed in memory and discarded. Persisting them to object storage (e.g., S3) would enable re-analysis without re-upload and support future features like diff comparison between resume versions.
+
+---
 
 ## Troubleshooting
 
