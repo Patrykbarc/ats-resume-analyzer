@@ -1,4 +1,3 @@
-import { AdSense } from '@/components/ui/adsense'
 import { Devtools } from '@/components/views/devtools'
 import { Footer } from '@/components/views/navigation/footer'
 import { Navigation } from '@/components/views/navigation/navigation'
@@ -15,6 +14,7 @@ import {
 import { Analytics } from '@vercel/analytics/react'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { Toaster } from 'react-hot-toast'
+import '../config/instrument.config.js'
 import '../index.css'
 
 const RootLayout = () => {
@@ -37,8 +37,6 @@ const RootLayout = () => {
               <Devtools />
             </div>
           </main>
-
-          <AdSense adSlot="9101349995" />
           <Footer />
         </div>
       </NuqsAdapter>

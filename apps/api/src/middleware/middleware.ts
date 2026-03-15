@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import type { Application } from 'express'
@@ -24,6 +25,8 @@ const middleware = (app: Application) => {
   })
 
   routes(app)
+
+  Sentry.setupExpressErrorHandler(app)
 
   app.use(middlewareErrorHandler)
 }

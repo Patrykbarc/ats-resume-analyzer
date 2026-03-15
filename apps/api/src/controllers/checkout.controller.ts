@@ -10,7 +10,12 @@ import { handleSubscriptionDeleted } from './helper/checkout/handleSubscriptionD
 import { handleSubscriptionUpdated } from './helper/checkout/handleSubscriptionUpdated'
 import { handleError } from './helper/handleError'
 
-const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL } = getEnvs()
+const {
+  STRIPE_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET,
+  FRONTEND_URL,
+  STRIPE_PRICE_ID
+} = getEnvs()
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true
@@ -23,7 +28,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [{ price: 'price_1SdycYAeQW7NoIv71U80I4Lh', quantity: 1 }],
+      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
       success_url: `${FRONTEND_URL}/checkout/success?id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/checkout/cancel`,
       metadata: { userId: id }

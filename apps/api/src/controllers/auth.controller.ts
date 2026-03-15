@@ -2,7 +2,7 @@ import * as bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { getEnvs } from '../lib/getEnv'
-import { prisma } from '../server'
+import { logger, prisma } from '../server'
 import {
   sendPasswordResetEmail,
   sendRegisterConfirmationEmail
@@ -10,7 +10,7 @@ import {
 import { createNewUser } from './helper/auth/createNewUser'
 import { generateRegistrationToken } from './helper/auth/generateRegistrationToken'
 import { getConfirmationTokenExpiry } from './helper/auth/getConfirmationTokenExpiry'
-import { handleNewJwtTokens } from './helper/auth/handleNewJwtTokens'
+import { handleNewJwtTokens, jwtRefreshCookieOptions } from './helper/auth/handleNewJwtTokens'
 import { verifyIsTokenExpired } from './helper/auth/verifyIsTokenExpired'
 import { handleError } from './helper/handleError'
 
@@ -75,7 +75,7 @@ export const registerUser = async (req: Request, res: Response) => {
         confirmationToken
       })
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError)
+      logger.error(`Failed to send confirmation email: ${emailError}`)
 
       return res.status(StatusCodes.CREATED).json({
         message:
@@ -112,7 +112,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     })
 
     if (!user) {
-      res.clearCookie('jwt_refresh')
+      res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: AuthErrorCodes.REFRESH_TOKEN_EXPIRED
       })
@@ -126,7 +126,7 @@ export const refreshToken = async (req: Request, res: Response) => {
   } catch (error) {
     handleError(error, res)
 
-    res.clearCookie('jwt_refresh')
+    res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
     return res.status(StatusCodes.FORBIDDEN).json({
       message: AuthErrorCodes.REFRESH_TOKEN_EXPIRED
     })
@@ -245,14 +245,14 @@ export const logoutUser = async (req: Request, res: Response) => {
       data: { refreshToken: null }
     })
 
-    res.clearCookie('jwt_refresh')
+    res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
 
     res.status(StatusCodes.OK).json({
       message: 'Logged out successfully.'
     })
   } catch (error) {
     handleError(error, res)
-    res.clearCookie('jwt_refresh')
+    res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
     res.status(StatusCodes.OK).json({
       message: 'Logged out successfully.'
     })
