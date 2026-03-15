@@ -72,7 +72,7 @@ graph TD
 - Vite
 - Tailwind CSS 4
 - TanStack Router & Query
-- Zustand (state management)
+- Zustand
 - Shadcn UI
 - Axios
 
