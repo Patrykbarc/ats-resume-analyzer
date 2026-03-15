@@ -15,7 +15,7 @@
     "prepare": "husky",
     "type-check": "pnpm --recursive run type-check",
     "clear": "bash scripts/prune.sh",
-    "dev:setup": "pnpm install && pnpm build && pnpm db:generate",
+    "dev:setup": "pnpm install && pnpm db:generate && pnpm build",
     "prettier": "npx prettier apps/*/** --write --verbose",
     "lint": "eslint \"apps/**/*.{js,ts,jsx,tsx}\"",
     "tsc:web": "pnpm --filter @monorepo/web run tsc",

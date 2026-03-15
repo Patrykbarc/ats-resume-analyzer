@@ -13,6 +13,7 @@ export function ResumeAnalyzer() {
     handleFileChange,
     handleReset,
     validationError,
+    mutationError,
     isPending
   } = useAnalyzer()
 
@@ -38,6 +39,10 @@ export function ResumeAnalyzer() {
 
         {validationError && (
           <p className="text-center text-rose-400">{validationError}</p>
+        )}
+
+        {mutationError && (
+          <p className="text-center text-rose-400">{mutationError}</p>
         )}
       </Card>
     </div>
