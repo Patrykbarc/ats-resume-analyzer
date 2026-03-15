@@ -14,6 +14,8 @@ An intelligent web application that analyzes resumes for compatibility with Appl
 - 📧 Email verification with Resend
 - ⭐ Premium subscription system
 - 🛡️ Rate limiting and security (Helmet, CORS)
+- 🔍 Error tracking with Sentry
+- 🧪 Unit + E2E tests (Vitest, Playwright)
 
 ## Tech Stack
 
@@ -39,17 +41,18 @@ An intelligent web application that analyzes resumes for compatibility with Appl
 - PostgreSQL
 - Resend
 - Multer
+- Sentry
 
 ### Monorepo
 
 - pnpm workspaces
-- Shared packages for types, schemas, database, and PDF parsing
+- Shared packages for types, schemas, database, constants, and Sentry logging
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js** (v20 or higher)
+- **Node.js** (v24 or higher)
 - **pnpm** (v10 or higher)
 - **PostgreSQL** database
 - **OpenAI API Key** - Get one from [OpenAI Platform](https://platform.openai.com/)
@@ -109,8 +112,14 @@ EMAIL_SENDER=sender@example.com
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 
+# Stripe price (required for premium subscription)
+STRIPE_PRICE_ID=your_stripe_price_id
+
 # Cron (optional - for protected cron routes)
 CRON_SECRET_KEY=your_random_cron_key
+
+# Sentry (optional - for error tracking)
+SENTRY_DSN=your_sentry_dsn_here
 ```
 
 #### Web Configuration
@@ -213,6 +222,10 @@ Vitest is ESM-native and shares configuration with the existing Vite/tsup build 
 
 Express 5 is used for the API server. Compared to Express 4, async route handlers propagate thrown errors to the error middleware automatically — no need for `try/catch` wrappers or `next(err)` calls in every handler.
 
+### Sentry for Error Tracking
+
+Sentry is used instead of plain `console.error` or Pino for production error tracking. Unlike a file logger, Sentry captures full stack traces, request context, and user metadata, then surfaces them in a searchable dashboard — making it practical to detect and triage production errors without digging through log files. The integration lives in the `sentry-logger` shared package so both the API and any future service share a single, consistently-configured client.
+
 ### In-Memory Access Token Storage
 
 The JWT access token is stored in a module-level JavaScript variable (`tokenStorage.ts`) rather than `localStorage`. This eliminates XSS exposure: scripts injected on any page of the domain cannot read the token. Sessions survive tab navigation because the token lives in the JS heap. Page refresh re-hydrates the token silently via the `httpOnly` refresh token cookie (`POST /auth/refresh`), which is inaccessible to JavaScript.
@@ -249,7 +262,8 @@ ats-resume-analyzer/
 │   │   └── prisma/         # Schema & migrations
 │   ├── constants/          # Shared constants
 │   ├── schemas/            # Shared Zod schemas
-│   └── types/              # Shared TypeScript types
+│   ├── types/              # Shared TypeScript types
+│   └── sentry-logger/      # Sentry error logging
 ├── scripts/                # Utility scripts
 └── package.json
 ```
@@ -287,6 +301,11 @@ ats-resume-analyzer/
 - `pnpm db:generate:prod` - Generate Prisma client (production)
 - `pnpm db:studio` - Open Prisma Studio
 - `pnpm db:reset` - Reset database
+
+### Testing
+
+- `pnpm test` — Run unit tests across all packages
+- `pnpm test:e2e` — Run Playwright end-to-end tests
 
 ### Other
 
