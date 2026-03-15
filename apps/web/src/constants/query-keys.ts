@@ -14,7 +14,7 @@ export const QUERY_KEYS = {
     parsedFile: (id: string) => ['analysisParsedFile', id] as const,
     latestHistory: (userId: string) =>
       ['analysisLatestHistory', userId] as const,
-    historyPage: (userId: string, page: number, limit: number) =>
-      ['analysisHistoryPage', userId, page, limit] as const
+    historyPage: (userId: string, cursor: string | undefined, limit: number) =>
+      ['analysisHistoryPage', userId, cursor, limit] as const
   }
 }

@@ -19,6 +19,7 @@ export const useAnalyzer = () => {
   const { user } = useSessionStore()
   const [file, setFile] = useState<File | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
   const { setRequestsLeft, setRequestsCooldown, isCooldownActive } =
     useRateLimit()
 
@@ -26,6 +27,7 @@ export const useAnalyzer = () => {
     onSuccess: (response) => {
       updateRequestLimit(response)
       setValidationError(null)
+      setMutationError(null)
 
       if (user?.id) {
         queryClient.invalidateQueries({
@@ -48,6 +50,8 @@ export const useAnalyzer = () => {
       }
 
       sentryLogger.unexpected(err, { context: 'analysis mutation error' })
+
+      setMutationError('Something went wrong. Please try again.')
     }
   })
 
@@ -80,6 +84,7 @@ export const useAnalyzer = () => {
     abort()
     setFile(null)
     setValidationError(null)
+    setMutationError(null)
   }, [abort])
 
   const updateRequestLimit = useCallback(
@@ -107,6 +112,7 @@ export const useAnalyzer = () => {
     handleFileChange,
     handleReset,
     validationError,
+    mutationError,
     isPending
   }
 }

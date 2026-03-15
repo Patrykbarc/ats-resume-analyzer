@@ -280,29 +280,26 @@ describe('GET /api/cv/analysis-history/:id', () => {
         fileSize: 1024
       }
     ] as never)
-    vi.mocked(prisma.requestLog.count).mockResolvedValue(1)
 
     const res = await request(app).get(`${API_URL}/analysis-history/user-id`)
     expect(res.statusCode).toBe(200)
     expect(res.body).toMatchObject({
-      pagination: { totalCount: 1, totalPages: 1, currentPage: 1, pageSize: 10 }
+      pagination: { nextCursor: null, hasMore: false, pageSize: 10 }
     })
     expect(res.body.logs).toHaveLength(1)
   })
 
   it('returns 200 respecting pagination params', async () => {
     vi.mocked(prisma.requestLog.findMany).mockResolvedValue([])
-    vi.mocked(prisma.requestLog.count).mockResolvedValue(25)
 
     const res = await request(app).get(
-      `${API_URL}/analysis-history/user-id?page=2&limit=5`
+      `${API_URL}/analysis-history/user-id?limit=5`
     )
     expect(res.statusCode).toBe(200)
     expect(res.body.pagination).toMatchObject({
-      currentPage: 2,
-      pageSize: 5,
-      totalCount: 25,
-      totalPages: 5
+      nextCursor: null,
+      hasMore: false,
+      pageSize: 5
     })
   })
 })

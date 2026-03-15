@@ -14,12 +14,12 @@ type UseGetAnalysisHistoryParams = AnalysisParamsWithLimit & {
 const analysisOptions = ({
   id,
   limit,
-  page,
+  cursor,
   keyType
 }: UseGetAnalysisHistoryParams) => {
   const queryKey =
-    keyType === 'historyPage' && page && limit
-      ? QUERY_KEYS.analysis.historyPage(id, page, limit)
+    keyType === 'historyPage' && limit
+      ? QUERY_KEYS.analysis.historyPage(id, cursor, limit)
       : QUERY_KEYS.analysis.latestHistory(id)
 
   return queryOptions<
@@ -27,7 +27,7 @@ const analysisOptions = ({
     AxiosError
   >({
     queryKey,
-    queryFn: () => getAnalysisHistory({ id, limit, page }),
+    queryFn: () => getAnalysisHistory({ id, limit, cursor }),
     enabled: !!id
   })
 }
