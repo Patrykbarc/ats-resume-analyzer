@@ -51,6 +51,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Install Playwright browsers
+        run: pnpm --filter @monorepo/web exec playwright install --with-deps chromium
+
       - name: Test:e2e
         run: pnpm test:e2e
 
