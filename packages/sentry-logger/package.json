@@ -1,5 +1,5 @@
 {
-  "name": "@monorepo/logger",
+  "name": "@monorepo/sentry-logger",
   "version": "1.0.0",
   "sideEffects": false,
   "exports": {

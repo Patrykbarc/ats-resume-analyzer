@@ -1,4 +1,4 @@
-import { logger as sentryLogger } from '@monorepo/logger'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import OpenAI from 'openai'

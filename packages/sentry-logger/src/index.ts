@@ -5,7 +5,7 @@ export type LogMeta = {
   [key: string]: unknown
 }
 
-export const logger = {
+export const sentryLogger = {
   // Expected errors - situations we anticipated could happen.
   // Examples: OpenAI 429, validation errors, known 4xx responses.
   // Sent to Sentry at 'warning' level.

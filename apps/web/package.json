@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@monorepo/constants": "workspace:*",
-    "@monorepo/logger": "workspace:*",
+    "@monorepo/sentry-logger": "workspace:*",
     "@monorepo/schemas": "workspace:*",
     "@monorepo/types": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.15",
