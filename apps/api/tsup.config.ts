@@ -2,7 +2,6 @@ import { type ChildProcess, spawn } from 'child_process'
 import { cp } from 'fs/promises'
 import { resolve } from 'path'
 import { defineConfig } from 'tsup'
-import { logger } from './src/server'
 
 let serverProcess: ChildProcess | null = null
 
@@ -51,7 +50,7 @@ export default defineConfig((options) => {
 
         serverProcess.on('exit', (code) => {
           if (code !== null && code !== 0 && code !== 130) {
-            logger.error(`Server process exited with code ${code}`)
+            console.error(`Server process exited with code ${code}`)
           }
           serverProcess = null
         })
