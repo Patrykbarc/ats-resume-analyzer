@@ -56,6 +56,13 @@ jobs:
 
       - name: Test:e2e
         run: pnpm test:e2e
+        env:
+          VITE_NODE_ENV: test
+          VITE_API_URL: http://localhost:3001
+          VITE_FRONTEND_URL: http://localhost:5173
+          VITE_PAYMENT_PUBLIC_KEY: pk_test_placeholder
+          VITE_CONTACT_EMAIL: test@example.com
+          VITE_SENTRY_DSN: https://fake@sentry.io/0
 
       - name: Build
         run: pnpm build
