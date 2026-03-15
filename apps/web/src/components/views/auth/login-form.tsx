@@ -11,6 +11,7 @@ import { useLoginMutation } from '@/hooks/useLoginMutation'
 import { getCurrentUserService } from '@/services/authService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { LoginUserSchema, LoginUserSchemaType } from '@monorepo/schemas'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -57,6 +58,9 @@ export function LoginForm() {
 
       toast.success('Logged in successfully!')
       navigate({ to: '/' })
+    },
+    onError: (err) => {
+      sentryLogger.unexpected(err)
     }
   })
 

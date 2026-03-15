@@ -13,6 +13,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useCancelSubscription } from '@/hooks/checkout/useCancelSubscription'
 import { cn } from '@/lib/utils'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -34,8 +35,9 @@ export function CancelSubscription({
         queryKey: QUERY_KEYS.session.currentUser
       })
     },
-    onError: () => {
+    onError: (err) => {
       toast.error('Failed to cancel subscription. Please try again.')
+      sentryLogger.unexpected(err)
     }
   })
 

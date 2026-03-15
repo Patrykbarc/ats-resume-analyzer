@@ -3,7 +3,7 @@ import { ResumeAnalyzer } from '@/components/views/resume-analyzer/resume-analyz
 import { Faq } from '@/components/views/seo/faq'
 import { Features } from '@/components/views/seo/features'
 import { LATEST_HISTORY_LIMIT } from '@/constants/history-pagination-limits'
-import { useGetAnalysisHistory } from '@/hooks/useGetAnalysisHistory'
+import { useGetAnalysisHistory } from '@/hooks/useGetAnalysisHistory/useGetAnalysisHistory'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { createFileRoute } from '@tanstack/react-router'

@@ -3,6 +3,7 @@ import { useResendVerificationLink } from '@/hooks/useResendVerificationLink'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { verifyUserService } from '@/services/authService'
 import { VerifyUserSchema } from '@monorepo/schemas'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import {
   createFileRoute,
   Link,
@@ -46,6 +47,9 @@ function RouteComponent() {
   const { mutate } = useResendVerificationLink({
     onSuccess: () => {
       navigate({ to: '/' })
+    },
+    onError: (err) => {
+      sentryLogger.unexpected(err)
     }
   })
 

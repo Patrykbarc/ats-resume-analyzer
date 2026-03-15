@@ -3,7 +3,7 @@ import { getAnalysisHistory } from '@/services/analyseService'
 import { AnalysisParamsWithLimit } from '@monorepo/schemas'
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { AxiosError, AxiosResponse } from 'axios'
-import { AnalysisHistoryResponse } from './useGetAnalysisHistory/types/types'
+import { AnalysisHistoryResponse } from './types/types'
 
 type AnalysisHistoryKeyType = 'latestHistory' | 'historyPage'
 

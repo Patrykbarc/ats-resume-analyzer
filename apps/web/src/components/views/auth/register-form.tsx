@@ -9,6 +9,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useRegisterMutation } from '@/hooks/useRegisterMutation'
 import { RegisterUserSchema, RegisterUserSchemaType } from '@monorepo/schemas'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { AuthErrorMessages } from './components/auth-error-messages'
 import { AuthFormFields } from './types/types'
@@ -35,7 +36,11 @@ const FORM_FIELDS: AuthFormFields<RegisterUserSchemaType>[] = [
 ]
 
 export function RegisterForm() {
-  const { mutate, isPending, isSuccess, error } = useRegisterMutation()
+  const { mutate, isPending, isSuccess, error } = useRegisterMutation({
+    onError: (err) => {
+      sentryLogger.unexpected(err)
+    }
+  })
 
   const form = useForm({
     defaultValues: {

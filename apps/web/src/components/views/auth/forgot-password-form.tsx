@@ -11,6 +11,7 @@ import {
   ResendEmailValidationSchema,
   ResendEmailValidationSchemaType
 } from '@monorepo/schemas'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { AuthErrorMessages } from './components/auth-error-messages'
@@ -34,6 +35,9 @@ export function ForgotPasswordForm() {
       setSuccessMessage(
         'If an account with that email exists, a password reset link has been sent.'
       )
+    },
+    onError: (err) => {
+      sentryLogger.unexpected(err)
     }
   })
 

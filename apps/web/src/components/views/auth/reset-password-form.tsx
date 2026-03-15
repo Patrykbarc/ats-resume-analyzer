@@ -8,6 +8,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useResetPassword } from '@/hooks/useResetPassword'
 import { ResetPasswordSchema, ResetPasswordSchemaType } from '@monorepo/schemas'
+import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { AuthErrorMessages } from './components/auth-error-messages'
@@ -35,6 +36,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const { mutate, isPending, isSuccess, error } = useResetPassword({
     onSuccess: () => {
       setSuccessMessage('Your password has been successfully changed.')
+    },
+    onError: (err) => {
+      sentryLogger.unexpected(err)
     }
   })
 

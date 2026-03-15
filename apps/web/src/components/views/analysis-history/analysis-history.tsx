@@ -9,8 +9,8 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { HISTORY_PAGE_LIMIT } from '@/constants/history-pagination-limits'
-import { useGetAnalysisHistory } from '@/hooks/useGetAnalysisHistory'
 import { HistoryLogs } from '@/hooks/useGetAnalysisHistory/types/types'
+import { useGetAnalysisHistory } from '@/hooks/useGetAnalysisHistory/useGetAnalysisHistory'
 import { formatHistoryDate } from '@/lib/formatHistoryDate'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { Link } from '@tanstack/react-router'
@@ -47,7 +47,7 @@ export function AnalysisHistory() {
         accessorKey: 'fileName',
         cell: ({ row: { original } }) => (
           <div className="flex items-center gap-2">
-            <File className="size-4 text-accent flex-shrink-0" />
+            <File className="size-4 text-accent shrink-0" />
             <Link
               to="/analyse/$id"
               params={{ id: original.analyseId }}
