@@ -26,7 +26,7 @@ An intelligent web application that analyzes resumes for compatibility with Appl
 - Vite
 - Tailwind CSS 4
 - TanStack Router & React Query
-- Zustand (state management)
+- Zustand
 - Shadcn UI
 - Axios
 
