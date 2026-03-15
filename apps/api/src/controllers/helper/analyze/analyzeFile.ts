@@ -9,7 +9,7 @@ const PROMPT_VAR = '{{CV_TEXT}}'
 
 export type AnalyseApiResponse = { id: string; output_text: string }
 
-type AnalyzeOptions = { premium?: boolean }
+type AnalyzeOptions = { premium?: boolean; signal?: AbortSignal }
 
 export const analyzeFile = async (
   extractedText: string,
@@ -22,24 +22,30 @@ export const analyzeFile = async (
 
   try {
     response = await openAiClient.responses
-      .create({
-        model: isPremium ? 'o3' : 'gpt-4.1-nano',
-        input: [
-          { role: 'developer', content: getPrompt('developer', prompt) },
-          {
-            role: 'assistant',
-            content: getPrompt('assistant', prompt).replace(
-              PROMPT_VAR,
-              extractedText
-            )
-          },
-          { role: 'user', content: extractedText }
-        ]
-      })
+      .create(
+        {
+          model: isPremium ? 'o3' : 'gpt-4.1-nano',
+          input: [
+            { role: 'developer', content: getPrompt('developer', prompt) },
+            {
+              role: 'assistant',
+              content: getPrompt('assistant', prompt).replace(
+                PROMPT_VAR,
+                extractedText
+              )
+            },
+            { role: 'user', content: extractedText }
+          ]
+        },
+        { signal: options?.signal }
+      )
       .then((res) => {
         return { id: res.id, output_text: res.output_text }
       })
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw error
+    }
     return { error: `OpenAI API Error: ${error || 'Unknown error'}` }
   }
 

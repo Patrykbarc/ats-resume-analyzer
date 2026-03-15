@@ -21,7 +21,7 @@ export const useAnalyzer = () => {
   const { setRequestsLeft, setRequestsCooldown, isCooldownActive } =
     useRateLimit()
 
-  const { mutate, isPending, error } = useAnalyseResumeMutation({
+  const { mutate, isPending, error, abort } = useAnalyseResumeMutation({
     onSuccess: (response) => {
       updateRequestLimit(response)
       setValidationError(null)
@@ -35,6 +35,9 @@ export const useAnalyzer = () => {
       navigate({ to: `/analyse/${response.data.id}` })
     },
     onError: (err) => {
+      if (isAxiosError(err) && err.code === 'ERR_CANCELED') {
+        return
+      }
       if (isAxiosError(err) && isRateLimitError(err)) {
         const timestamp = getHeadersRateLimitReset(err.response)
         setRequestsCooldown(timestamp)
@@ -68,9 +71,10 @@ export const useAnalyzer = () => {
   }, [file, mutate])
 
   const handleReset = useCallback(() => {
+    abort()
     setFile(null)
     setValidationError(null)
-  }, [])
+  }, [abort])
 
   const updateRequestLimit = useCallback(
     (response: AxiosResponse) => {

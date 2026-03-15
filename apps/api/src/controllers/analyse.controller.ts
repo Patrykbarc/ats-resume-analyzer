@@ -3,6 +3,11 @@ import type { AiAnalysis, AiAnalysisError } from '@monorepo/types'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { promises as fs } from 'node:fs'
+import {
+  analyzeStore,
+  ipKeyGenerator,
+  userAnalyzeStore
+} from '../config/limiter.config'
 import { logger, openAiClient, prisma } from '../server'
 import { analyzeFile } from './helper/analyze/analyzeFile'
 import { isPremiumUser } from './helper/analyze/isPremiumUser'
@@ -40,9 +45,11 @@ export const createAnalyze = async (req: Request, res: Response) => {
 
     const user = req.user as UserSchemaType | undefined
 
+    const signal = (req as Request & { signal?: AbortSignal }).signal
+
     const analysisResult: AiAnalysis | AiAnalysisError = await analyzeFile(
       sanitizedTextResult,
-      { premium: isPremiumUser(user) }
+      { premium: isPremiumUser(user), signal }
     )
 
     if ('error' in analysisResult) {
@@ -66,6 +73,19 @@ export const createAnalyze = async (req: Request, res: Response) => {
       parsed_file: sanitizedTextResult
     })
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      const key =
+        (req.user as { id?: string } | undefined)?.id ??
+        ipKeyGenerator(req.ip ?? 'unknown')
+
+      const store = req.user ? userAnalyzeStore : analyzeStore
+      await store.decrement(key)
+
+      if (!res.headersSent) {
+        res.status(499).end()
+      }
+      return
+    }
     handleError(error, res)
   }
 }
