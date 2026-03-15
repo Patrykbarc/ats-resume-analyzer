@@ -8,6 +8,7 @@ import {
   isRateLimitError
 } from '@/lib/rateLimits'
 import { useSessionStore } from '@/stores/session/useSessionStore'
+import { logger } from '@monorepo/logger'
 import { FileSchemaInput } from '@monorepo/schemas'
 import { useNavigate } from '@tanstack/react-router'
 import { AxiosResponse, isAxiosError } from 'axios'
@@ -38,10 +39,15 @@ export const useAnalyzer = () => {
       if (isAxiosError(err) && err.code === 'ERR_CANCELED') {
         return
       }
+
       if (isAxiosError(err) && isRateLimitError(err)) {
         const timestamp = getHeadersRateLimitReset(err.response)
         setRequestsCooldown(timestamp)
+        logger.expected(err, { context: 'rate limit during analysis' })
+        return
       }
+
+      logger.unexpected(err, { context: 'analysis mutation error' })
     }
   })
 

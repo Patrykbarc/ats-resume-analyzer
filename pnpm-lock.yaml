@@ -93,6 +93,9 @@ importers:
       '@monorepo/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@monorepo/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@monorepo/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -220,6 +223,9 @@ importers:
       '@monorepo/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@monorepo/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@monorepo/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -402,6 +408,22 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+
+  packages/logger:
+    dependencies:
+      '@sentry/core':
+        specifier: ^10.43.0
+        version: 10.43.0
+    devDependencies:
+      '@tsconfig/node20':
+        specifier: 'catalog:'
+        version: 20.1.4
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.1.0(postcss@8.5.8)(typescript@5.9.3)
 
   packages/schemas:
     dependencies:

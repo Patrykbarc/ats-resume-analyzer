@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@monorepo/constants": "workspace:*",
+    "@monorepo/logger": "workspace:*",
     "@monorepo/database": "workspace:*",
     "@monorepo/schemas": "workspace:*",
     "@monorepo/types": "workspace:*",
