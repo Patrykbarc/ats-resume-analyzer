@@ -31,7 +31,6 @@ function RouteComponent() {
   const { data: history } = useGetAnalysisHistory({
     id: user?.id ?? '',
     limit: LATEST_HISTORY_LIMIT,
-    page: 1,
     keyType: 'latestHistory'
   })
 

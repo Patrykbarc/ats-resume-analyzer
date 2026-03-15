@@ -1,7 +1,6 @@
 type Pagination = {
-  totalCount: number
-  totalPages: number
-  currentPage: number
+  nextCursor: string | null
+  hasMore: boolean
   pageSize: number
 }
 

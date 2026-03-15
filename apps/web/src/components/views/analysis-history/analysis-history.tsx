@@ -1,4 +1,4 @@
-import { Pagination } from '@/components/ui/pagination/pagination'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -21,24 +21,43 @@ import {
   useReactTable
 } from '@tanstack/react-table'
 import { File } from 'lucide-react'
-import { parseAsInteger, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Column = ColumnDef<HistoryLogs>[]
 
 export function AnalysisHistory() {
   const { user } = useSessionStore()
-  const [currentPage] = useQueryState('page', parseAsInteger.withDefault(1))
+  const [cursor, setCursor] = useState<string | undefined>(undefined)
+  const [accumulatedLogs, setAccumulatedLogs] = useState<HistoryLogs[]>([])
 
   const { data: history, isLoading } = useGetAnalysisHistory({
     id: user?.id ?? '',
     limit: HISTORY_PAGE_LIMIT,
-    page: currentPage,
+    cursor,
     keyType: 'historyPage'
   })
 
-  const historyLogs: HistoryLogs[] = history?.data.logs ?? []
-  const pagination = history?.data.pagination
+  const pagination = history?.data?.pagination
+  const incomingLogs = history?.data?.logs
+
+  // Append new page of results whenever a new cursor resolves
+  useEffect(() => {
+    if (!incomingLogs?.length) {
+      return
+    }
+
+    setAccumulatedLogs((prev) => {
+      const existingIds = new Set(prev.map((l) => l.analyseId))
+      const fresh = incomingLogs.filter((l) => !existingIds.has(l.analyseId))
+      return fresh.length ? [...prev, ...fresh] : prev
+    })
+  }, [incomingLogs])
+
+  const handleLoadMore = () => {
+    if (pagination?.nextCursor) {
+      setCursor(pagination.nextCursor)
+    }
+  }
 
   const columns: Column = useMemo(
     () => [
@@ -63,7 +82,6 @@ export function AnalysisHistory() {
         accessorKey: 'createdAt',
         cell: ({ getValue }) => {
           const createdAt = getValue<HistoryLogs['createdAt']>()
-
           return formatHistoryDate(createdAt)
         }
       }
@@ -72,23 +90,22 @@ export function AnalysisHistory() {
   )
 
   const table = useReactTable({
-    data: historyLogs,
+    data: accumulatedLogs,
     columns,
     getCoreRowModel: getCoreRowModel()
   })
 
-  const totalPages = pagination?.totalPages ?? 1
-  const totalCount = pagination?.totalCount ?? 0
-
   const rows = table.getRowModel().rows
   const headers = table.getHeaderGroups()
+
+  const isInitialLoading = isLoading && accumulatedLogs.length === 0
 
   return (
     <div className="space-y-4 bg-white border p-6 rounded-xl">
       <div className="space-y-2">
         <h1 className="leading-none font-semibold">Analysis Records</h1>
         <p className="text-muted-foreground text-sm">
-          {totalCount} records found
+          {accumulatedLogs.length} records loaded
         </p>
       </div>
 
@@ -111,7 +128,7 @@ export function AnalysisHistory() {
             ))}
           </TableHeader>
 
-          {isLoading ? (
+          {isInitialLoading ? (
             <TableBodySkeleton columns={columns} />
           ) : (
             <TableBody>
@@ -142,7 +159,16 @@ export function AnalysisHistory() {
         </Table>
       </div>
 
-      {totalPages > 1 && <Pagination totalPages={totalPages} />}
+      {pagination?.hasMore && (
+        <Button
+          variant="outline"
+          onClick={handleLoadMore}
+          disabled={isLoading}
+          className="w-full"
+        >
+          {isLoading ? 'Loading...' : 'Load more'}
+        </Button>
+      )}
     </div>
   )
 }

@@ -2,11 +2,27 @@ import * as bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { getEnvs } from '../lib/getEnv'
-import { logger, prisma } from '../server'
+import { logger } from '../server'
 import {
   sendPasswordResetEmail,
   sendRegisterConfirmationEmail
 } from '../services/email.service'
+import {
+  clearRefreshToken,
+  computeIsPremium,
+  findUserBasicInfo,
+  findUserByConfirmationToken,
+  findUserByConfirmationTokenForResend,
+  findUserByEmail,
+  findUserByEmailForReset,
+  findUserByIdAndRefreshToken,
+  findUserByResetToken,
+  findUserExtendedInfo,
+  markEmailConfirmed,
+  resetUserPassword,
+  updateConfirmationToken,
+  updateResetPasswordToken
+} from '../services/auth.service'
 import { createNewUser } from './helper/auth/createNewUser'
 import { generateRegistrationToken } from './helper/auth/generateRegistrationToken'
 import { getConfirmationTokenExpiry } from './helper/auth/getConfirmationTokenExpiry'
@@ -21,9 +37,7 @@ export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email }
-    })
+    const user = await findUserByEmail(email)
 
     if (!user) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -59,7 +73,7 @@ export const registerUser = async (req: Request, res: Response) => {
   const { email, password } = req.body
 
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } })
+    const existingUser = await findUserByEmail(email)
 
     if (existingUser) {
       return res
@@ -107,9 +121,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
     const userId = decoded.userId
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId, refreshToken: refreshToken }
-    })
+    const user = await findUserByIdAndRefreshToken(userId, refreshToken)
 
     if (!user) {
       res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
@@ -137,15 +149,7 @@ export const verifyUser = async (req: Request, res: Response) => {
   const { token } = req.body
 
   try {
-    const userRecord = await prisma.user.findUnique({
-      where: {
-        confirmationToken: token
-      },
-      select: {
-        id: true,
-        confirmationTokenExpiry: true
-      }
-    })
+    const userRecord = await findUserByConfirmationToken(token)
 
     if (!userRecord) {
       return res
@@ -161,16 +165,7 @@ export const verifyUser = async (req: Request, res: Response) => {
         .json({ message: 'Verification token has expired.' })
     }
 
-    await prisma.user.update({
-      where: {
-        id: userRecord.id
-      },
-      data: {
-        confirmationToken: null,
-        confirmationTokenExpiry: null,
-        isEmailConfirmed: true
-      }
-    })
+    await markEmailConfirmed(userRecord.id)
 
     return res
       .status(StatusCodes.OK)
@@ -184,10 +179,7 @@ export const resendVerificationLink = async (req: Request, res: Response) => {
   const { token } = req.body
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { confirmationToken: token },
-      select: { id: true, email: true, isEmailConfirmed: true }
-    })
+    const user = await findUserByConfirmationTokenForResend(token)
 
     if (!user) {
       return res.status(StatusCodes.OK).json({
@@ -204,13 +196,7 @@ export const resendVerificationLink = async (req: Request, res: Response) => {
     const confirmationToken = generateRegistrationToken()
     const confirmationTokenExpiry = getConfirmationTokenExpiry()
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        confirmationToken,
-        confirmationTokenExpiry
-      }
-    })
+    await updateConfirmationToken(user.id, confirmationToken, confirmationTokenExpiry)
 
     await sendRegisterConfirmationEmail({
       reciever: user.email,
@@ -240,10 +226,7 @@ export const logoutUser = async (req: Request, res: Response) => {
       userId: string
     }
 
-    await prisma.user.update({
-      where: { id: decoded.userId },
-      data: { refreshToken: null }
-    })
+    await clearRefreshToken(decoded.userId)
 
     res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
 
@@ -270,21 +253,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        isPremium: true,
-        subscriptionCurrentPeriodEnd: true,
-
-        ...(extendQuery && {
-          createdAt: true,
-          subscriptionStatus: true,
-          cancelAtPeriodEnd: true
-        })
-      }
-    })
+    const user = extendQuery
+      ? await findUserExtendedInfo(userId)
+      : await findUserBasicInfo(userId)
 
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -292,16 +263,18 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       })
     }
 
-    const computedIsPremium =
-      user.isPremium &&
-      user.subscriptionCurrentPeriodEnd != null &&
-      user.subscriptionCurrentPeriodEnd > new Date()
+    const { subscriptionCurrentPeriodEnd, ...userWithoutPeriodEnd } = user as typeof user & {
+      subscriptionCurrentPeriodEnd?: Date | null
+    }
 
-    const { subscriptionCurrentPeriodEnd, ...userWithoutPeriodEnd } = user
+    const isPremiumValue = computeIsPremium({
+      isPremium: user.isPremium,
+      subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd ?? null
+    })
 
     res.status(StatusCodes.OK).json({
       ...userWithoutPeriodEnd,
-      isPremium: computedIsPremium,
+      isPremium: isPremiumValue,
       ...(extendQuery && { subscriptionCurrentPeriodEnd })
     })
   } catch (error) {
@@ -313,10 +286,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
   const { email } = req.body
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true }
-    })
+    const user = await findUserByEmailForReset(email)
 
     if (!user) {
       return res.status(StatusCodes.OK).json({
@@ -327,13 +297,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
     const resetPasswordToken = generateRegistrationToken()
     const resetPasswordExpiry = getConfirmationTokenExpiry()
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        resetPasswordToken,
-        resetPasswordExpiry
-      }
-    })
+    await updateResetPasswordToken(user.id, resetPasswordToken, resetPasswordExpiry)
 
     await sendPasswordResetEmail({
       reciever: user.email,
@@ -352,10 +316,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   const { token, password } = req.body
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { resetPasswordToken: token },
-      select: { id: true, resetPasswordExpiry: true }
-    })
+    const user = await findUserByResetToken(token)
 
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -373,14 +334,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        resetPasswordToken: null,
-        resetPasswordExpiry: null
-      }
-    })
+    await resetUserPassword(user.id, hashedPassword)
 
     res.status(StatusCodes.OK).json({
       message: 'Password has been reset successfully.'

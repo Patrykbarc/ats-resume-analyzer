@@ -3,7 +3,12 @@ import { StatusCodes } from 'http-status-codes'
 import Stripe from 'stripe'
 import { getEnvs } from '../lib/getEnv'
 import { isStripeError } from '../lib/isStripeError'
-import { logger, prisma } from '../server'
+import { logger } from '../server'
+import {
+  findUserWithSubscription,
+  updateSubscriptionCancellation,
+  updateSubscriptionRestored
+} from '../services/checkout.service'
 import { handleCheckoutSessionCompleted } from './helper/checkout/handleCheckoutSessionCompleted'
 import { handleInvoicePaymentFailed } from './helper/checkout/handleInvoicePaymentFailed'
 import { handleSubscriptionDeleted } from './helper/checkout/handleSubscriptionDeleted'
@@ -149,9 +154,7 @@ export const cancelSubscription = async (req: Request, res: Response) => {
 
     logger.info(`Cancelling subscription for user: ${id}`)
 
-    const user = await prisma.user.findUnique({
-      where: { id }
-    })
+    const user = await findUserWithSubscription(id)
 
     if (!user || !user.stripeSubscriptionId) {
       logger.error(`User or subscription not found for userId: ${id}`)
@@ -173,15 +176,10 @@ export const cancelSubscription = async (req: Request, res: Response) => {
     const currentPeriodEnd =
       updatedSubscription.items.data[0]?.current_period_end
 
-    await prisma.user.update({
-      where: { id },
-      data: {
-        cancelAtPeriodEnd: true,
-        subscriptionCurrentPeriodEnd: currentPeriodEnd
-          ? new Date(currentPeriodEnd * 1000)
-          : null
-      }
-    })
+    await updateSubscriptionCancellation(
+      id,
+      currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null
+    )
 
     logger.info(
       `User ${id} subscription marked as cancelAtPeriodEnd in database.`
@@ -205,7 +203,7 @@ export const restoreSubscription = async (req: Request, res: Response) => {
   try {
     const id = (req.user as { id: string }).id
 
-    const user = await prisma.user.findUnique({ where: { id } })
+    const user = await findUserWithSubscription(id)
 
     if (!user?.stripeSubscriptionId) {
       return res
@@ -236,13 +234,7 @@ export const restoreSubscription = async (req: Request, res: Response) => {
       }
     )
 
-    await prisma.user.update({
-      where: { id },
-      data: {
-        subscriptionStatus: updatedSubscription.status,
-        cancelAtPeriodEnd: false
-      }
-    })
+    await updateSubscriptionRestored(id, updatedSubscription.status)
 
     res
       .status(StatusCodes.OK)

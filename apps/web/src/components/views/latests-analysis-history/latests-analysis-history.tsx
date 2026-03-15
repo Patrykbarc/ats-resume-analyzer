@@ -1,6 +1,5 @@
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { LATEST_HISTORY_LIMIT } from '@/constants/history-pagination-limits'
 import { AnalysisHistoryResponse } from '@/hooks/useGetAnalysisHistory/types/types'
 import { formatHistoryDate } from '@/lib/formatHistoryDate'
 
@@ -13,8 +12,7 @@ type AnalysisHistoryProps = {
 }
 
 export function LatestsAnalysisHistory({ history }: AnalysisHistoryProps) {
-  const historyItemCount = history?.pagination.totalCount ?? 0
-  const shouldShowViewAll = historyItemCount > LATEST_HISTORY_LIMIT
+  const shouldShowViewAll = history?.pagination.hasMore ?? false
 
   return (
     <Card className="border-border bg-card p-6">

@@ -69,14 +69,14 @@ export const getParsedFile = async (
 export const getAnalysisHistory = async ({
   id,
   limit,
-  page
+  cursor
 }: AnalysisParamsWithLimit) => {
   if (!id) {
     return null
   }
 
   const response = await apiClient(`/cv/analysis-history/${id}`, {
-    params: { limit, page }
+    params: { limit, cursor }
   })
 
   return response

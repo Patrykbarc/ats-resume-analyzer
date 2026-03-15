@@ -6,7 +6,7 @@ const AnalysisParamsSchema = z.object({
 
 const PaginationSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(10).optional(),
-  page: z.coerce.number().min(1).default(1).optional()
+  cursor: z.string().optional()
 })
 
 const AnalysisParamsWithPaginationSchema = AnalysisParamsSchema.extend(

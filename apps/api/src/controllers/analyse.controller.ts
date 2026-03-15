@@ -8,12 +8,16 @@ import {
   ipKeyGenerator,
   userAnalyzeStore
 } from '../config/limiter.config'
-import { logger, openAiClient, prisma } from '../server'
+import { logger, openAiClient } from '../server'
+import {
+  getAnalysisHistory as getAnalysisHistoryService,
+  getAnalysisOwner,
+  saveRequestLog
+} from '../services/analyse.service'
 import { analyzeFile } from './helper/analyze/analyzeFile'
 import { isPremiumUser } from './helper/analyze/isPremiumUser'
 import { parseFileAndSanitize } from './helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from './helper/analyze/parseOpenAiApiResponse'
-import { saveRequestLog } from './helper/analyze/saveRequestLog'
 import { handleError } from './helper/handleError'
 
 export const createAnalyze = async (req: Request, res: Response) => {
@@ -120,18 +124,7 @@ export const getAnalysis = async (
 
   try {
     const [user, response] = await Promise.all([
-      prisma.user.findFirst({
-        select: {
-          id: true
-        },
-        where: {
-          requestLogs: {
-            some: {
-              analyseId: id
-            }
-          }
-        }
-      }),
+      getAnalysisOwner(id),
       openAiClient.responses
         .retrieve(id)
         .then((res) => ({ id: res.id, output_text: res.output_text }))
@@ -156,10 +149,7 @@ export const getParsedFile = async (
 
   try {
     const [owner, responseList] = await Promise.all([
-      prisma.user.findFirst({
-        select: { id: true },
-        where: { requestLogs: { some: { analyseId: id } } }
-      }),
+      getAnalysisOwner(id),
       openAiClient.responses.inputItems.list(id) as unknown as ParsedFile
     ])
 
@@ -184,39 +174,18 @@ export const getAnalysisHistory = async (
   res: Response
 ) => {
   const { id } = req.params
-  const { limit, page } = req.query
+  const { limit, cursor } = req.query
 
-  const currentPage = Math.max(Number(page) || 1, 1)
   const pageSize = Math.max(Number(limit) || 10, 1)
 
   try {
-    const [logs, totalCount] = await Promise.all([
-      prisma.requestLog.findMany({
-        select: {
-          analyseId: true,
-          createdAt: true,
-          fileName: true,
-          fileSize: true
-        },
-        where: { userId: id },
-        orderBy: { createdAt: 'desc' },
-        take: pageSize,
-        skip: (currentPage - 1) * pageSize
-      }),
-      prisma.requestLog.count({ where: { userId: id } })
-    ])
+    const result = await getAnalysisHistoryService(
+      id,
+      cursor as string | undefined,
+      pageSize
+    )
 
-    const totalPages = Math.ceil(totalCount / pageSize)
-
-    return res.status(StatusCodes.OK).json({
-      logs,
-      pagination: {
-        totalCount,
-        totalPages,
-        currentPage,
-        pageSize
-      }
-    })
+    return res.status(StatusCodes.OK).json(result)
   } catch (error) {
     handleError(error, res)
   }
