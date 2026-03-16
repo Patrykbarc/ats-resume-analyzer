@@ -6,48 +6,115 @@ An intelligent web application that analyzes resumes for compatibility with Appl
 
 ## Architecture
 
+### Architecture Overview
+
 ```mermaid
-graph TD
-  subgraph Client
-    Browser
-  end
+flowchart LR
+  User["👤 User"]
 
-  subgraph Vercel
-    Web["Web (React + TanStack Router)"]
-  end
-
-  subgraph Render
-    API["API"]
+  subgraph Monorepo
+    direction TB
+    subgraph apps["apps/"]
+      Web["Web\nReact + TanStack Router\n─────────────\nVercel"]
+      API["API\nExpress 5 + Passport.js\n─────────────\nRender"]
+    end
+    subgraph packages["packages/"]
+      Schemas["@monorepo/schemas\nZod validation"]
+      Database["@monorepo/database\nPrisma client"]
+      Sentry["@monorepo/sentry-logger"]
+    end
   end
 
   subgraph External
-    OpenAI["OpenAI (gpt-4.1-nano / o3)"]
-    Stripe
-    Resend["Resend (email)"]
-    Sentry["Sentry (errors)"]
+    OpenAI["OpenAI\ngpt-4.1-nano / o3"]
+    Stripe["Stripe"]
+    Resend["Resend\nemail"]
+    SentryIO["Sentry.io\nerrors"]
+    DB[("PostgreSQL")]
   end
 
-  subgraph Data
-    DB[(PostgreSQL / Prisma)]
-  end
-
-  subgraph "Monorepo Packages"
-    Schemas["@monorepo/schemas"]
-    Types["@monorepo/types"]
-    Database["@monorepo/database (Prisma client)"]
-  end
-
-  Browser --> Web
-  Web -->|"REST (axios + httpOnly cookie)"| API
+  User -->|"HTTPS"| Web
+  Web -->|"REST · Bearer in-memory\nhttpOnly refresh cookie"| API
   API --> DB
-  API --> OpenAI
-  API --> Stripe
+  API -->|"Responses API"| OpenAI
+  API -->|"webhook"| Stripe
   API --> Resend
-  API --> Sentry
-  Web --> Sentry
-  Schemas -.->|"shared validation"| Web
-  Schemas -.->|"shared validation"| API
-  Database -.-> API
+  API --> SentryIO
+  Web --> SentryIO
+
+  Schemas -. "shared validation" .-> Web
+  Schemas -. "shared validation" .-> API
+  Database -. "Prisma client" .-> API
+  Sentry -. "error logging" .-> API
+  Sentry -. "error logging" .-> Web
+```
+
+### Resume Analysis Flow
+
+```mermaid
+flowchart TD
+  Upload(["📄 Upload PDF"])
+  Parse["Parse PDF\n→ extract text"]
+  TierCheck{"User tier?"}
+
+  subgraph Free["Free tier"]
+    RateLimit["Rate limiter\ncheck"]
+    ModelFree["gpt-4.1-nano"]
+  end
+
+  subgraph SignedIn["Signed-in tier"]
+    ModelSignedIn["gpt-4.1-nano"]
+  end
+
+  subgraph Premium["Premium tier"]
+    ModelPremium["o3\nreasoning model"]
+  end
+
+  OpenAI["OpenAI Responses API\n→ returns stable id"]
+  SaveDB[("Save analysis\nto PostgreSQL\n(OpenAI id as PK)")]
+  Return(["Return analysis id\nto client"])
+
+  Upload --> Parse --> TierCheck
+  TierCheck -->|"unauthenticated"| RateLimit
+  RateLimit -->|"allowed"| ModelFree
+  TierCheck -->|"authenticated"| ModelSignedIn
+  TierCheck -->|"Stripe subscription active"| ModelPremium
+  ModelFree --> OpenAI
+  ModelSignedIn --> OpenAI
+  ModelPremium --> OpenAI
+  OpenAI --> SaveDB --> Return
+```
+
+### Auth Flow
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant Web
+  participant API
+  participant DB
+  participant Resend
+
+  Note over User,Resend: Registration
+  User->>Web: fill register form
+  Web->>API: POST /auth/register
+  API->>DB: create user (unverified)
+  API->>Resend: send verification email
+  Resend-->User: email with token link
+  User->>API: GET /auth/verify?token=…
+  API->>DB: mark email verified
+
+  Note over User,Resend: Login
+  User->>Web: fill login form
+  Web->>API: POST /auth/login
+  API-->>Web: access token (JSON body)
+  API-->>Web: refresh token (httpOnly cookie)
+  Web->>Web: store access token
+
+  Note over User,Resend: Silent refresh on page reload
+  Web->>API: POST /auth/refresh (httpOnly cookie sent automatically)
+  API-->>Web: new access token (JSON body)
+  Web->>Web: restore in-memory token
 ```
 
 ## Features
@@ -56,12 +123,12 @@ graph TD
 - 🤖 AI-powered evaluation using OpenAI
 - 📊 Detailed ATS compatibility scoring
 - 💡 Actionable recommendations for improvement
-- 🔐 User authentication (JWT + Passport.js)
+- 🔐 User authentication
 - 📧 Email verification with Resend
 - ⭐ Premium subscription system
-- 🛡️ Rate limiting and security (Helmet, CORS)
+- 🛡️ Rate limiting and security
 - 🔍 Error tracking with Sentry
-- 🧪 Unit + E2E tests (Vitest, Playwright)
+- 🧪 Unit + E2E tests
 
 ## Tech Stack
 
@@ -102,7 +169,7 @@ Before you begin, ensure you have the following installed:
 - **pnpm** (v10 or higher)
 - **PostgreSQL** database
 - **OpenAI API Key** - Get one from [OpenAI Platform](https://platform.openai.com/)
-- **Resend API Key** (optional) - For email verification
+- **Resend API Key** - For email verification
 
 ## Getting Started
 
@@ -136,35 +203,35 @@ Edit `apps/api/.env` and configure the following variables:
 NODE_ENV=development
 PORT=8080
 
-# OpenAI API Key (required)
+# OpenAI API Key
 OPENAI_API_KEY=your_openai_api_key_here
 
-# Frontend URL for CORS (required for cookies/auth)
+# Frontend URL for CORS
 FRONTEND_URL=http://localhost:5173
 
-# JWT Secrets (required) - generate with: pnpm --filter @monorepo/api gen-key
+# JWT Secrets - generate with: pnpm --filter @monorepo/api gen-key
 JWT_SECRET=your_jwt_secret_here
 JWT_REFRESH_SECRET=your_jwt_refresh_secret_here
 
-# Database (required)
+# Database
 DATABASE_URL=your_postgresql_connection_string
 DIRECT_URL=your_postgresql_direct_connection_string
 
-# Email (optional - for email verification)
+# Email
 RESEND_API_KEY=your_resend_api_key_here
 EMAIL_SENDER=sender@example.com
 
-# Stripe (optional - required for premium)
+# Stripe
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 
-# Stripe price (required for premium subscription)
+# Stripe price
 STRIPE_PRICE_ID=your_stripe_price_id
 
-# Cron (optional - for protected cron routes)
+# Cron
 CRON_SECRET_KEY=your_random_cron_key
 
-# Sentry (optional - for error tracking)
+# Sentry
 SENTRY_DSN=your_sentry_dsn_here
 ```
 
@@ -180,14 +247,23 @@ cp .env.template .env
 Edit `apps/web/.env` and configure the following variables:
 
 ```env
-# API URL (required)
+# API server URL for frontend requests
 VITE_API_URL=http://localhost:8080
 
-# After editing env files, regenerate typed envs
-# (validates presence and makes types available in code)
-# From repo root:
-# pnpm gen-envs
+# Frontend URL for CORS and email links
+VITE_FRONTEND_URL=http://localhost:5173
+
+# Stripe public key for payment forms
+VITE_PAYMENT_PUBLIC_KEY=your_stripe_public_key
+
+# Contact email displayed in the application
+VITE_CONTACT_EMAIL=your_contact_email
+
+# Sentry DSN for error tracking on frontend
+VITE_SENTRY_DSN=your_sentry_dsn_here
 ```
+
+After editing env files, regenerate typed envs from repo root: `pnpm gen-envs`
 
 ### 4. Running the Application
 
@@ -214,7 +290,7 @@ The application will be available at:
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8080
 
-Optional quick setup (build packages and generate Prisma client):
+Optional quick setup (install dependencies, build packages and generate Prisma client):
 
 ```bash
 pnpm dev:setup
@@ -246,7 +322,7 @@ Key decisions made during development and the reasoning behind them:
 
 ### pnpm Monorepo with Shared Packages
 
-A single pnpm workspace hosts both apps (`api`, `web`) and four shared packages (`database`, `types`, `schemas`, `constants`). This lets the Zod schemas that validate API request bodies be reused directly in the React forms — a single source of truth that eliminates drift between frontend validation and backend enforcement. The `pnpm catalogs` feature pins shared dependency versions (Zod, Stripe, TypeScript, etc.) across all packages without duplicating version strings.
+A single pnpm workspace hosts both apps (`api`, `web`) and five shared packages (`database`, `types`, `schemas`, `constants`, `sentry-logger`). This lets the Zod schemas that validate API request bodies be reused directly in the React forms — a single source of truth that eliminates drift between frontend validation and backend enforcement. The `pnpm catalogs` feature pins shared dependency versions (Zod, Stripe, TypeScript, etc.) across all packages without duplicating version strings.
 
 ### TanStack Router over React Router
 
@@ -533,7 +609,3 @@ ISC
 ## Support
 
 For issues and questions, please open an issue in the repository.
-
----
-
-Built with ❤️ using React, Express, Prisma, and OpenAI
