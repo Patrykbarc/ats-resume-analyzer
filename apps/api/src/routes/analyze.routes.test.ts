@@ -46,9 +46,6 @@ vi.mock('../controllers/helper/analyze/saveRequestLog', () => ({
   saveRequestLog: vi.fn()
 }))
 
-vi.mock('../controllers/helper/handleError', () => ({
-  handleError: vi.fn()
-}))
 
 import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
 import { parseFileAndSanitize } from '../controllers/helper/analyze/parseFileAndSanitize'
