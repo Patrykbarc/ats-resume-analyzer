@@ -18,7 +18,6 @@ import { analyzeFile } from './helper/analyze/analyzeFile'
 import { isPremiumUser } from './helper/analyze/isPremiumUser'
 import { parseFileAndSanitize } from './helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from './helper/analyze/parseOpenAiApiResponse'
-import { handleError } from './helper/handleError'
 
 export const createAnalyze = async (req: Request, res: Response) => {
   const file = req.file
@@ -90,7 +89,7 @@ export const createAnalyze = async (req: Request, res: Response) => {
       }
       return
     }
-    handleError(error, res)
+    throw error
   }
 }
 
@@ -122,22 +121,18 @@ export const getAnalysis = async (
 ) => {
   const { id } = req.params
 
-  try {
-    const [user, response] = await Promise.all([
-      getAnalysisOwner(id),
-      openAiClient.responses
-        .retrieve(id)
-        .then((res) => ({ id: res.id, output_text: res.output_text }))
-    ])
+  const [user, response] = await Promise.all([
+    getAnalysisOwner(id),
+    openAiClient.responses
+      .retrieve(id)
+      .then((res) => ({ id: res.id, output_text: res.output_text }))
+  ])
 
-    const parsedResponse = parseOpenAiApiResponse(response)
+  const parsedResponse = parseOpenAiApiResponse(response)
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: StatusCodes.OK, ...parsedResponse, user })
-  } catch (error) {
-    handleError(error, res)
-  }
+  return res
+    .status(StatusCodes.OK)
+    .json({ status: StatusCodes.OK, ...parsedResponse, user })
 }
 
 export const getParsedFile = async (
@@ -147,26 +142,22 @@ export const getParsedFile = async (
   const { id } = req.params
   const requestingUser = req.user as UserSchemaType
 
-  try {
-    const [owner, responseList] = await Promise.all([
-      getAnalysisOwner(id),
-      openAiClient.responses.inputItems.list(id) as unknown as ParsedFile
-    ])
+  const [owner, responseList] = await Promise.all([
+    getAnalysisOwner(id),
+    openAiClient.responses.inputItems.list(id) as unknown as ParsedFile
+  ])
 
-    if (!owner || owner.id !== requestingUser.id) {
-      return res.status(StatusCodes.FORBIDDEN).json({
-        status: StatusCodes.FORBIDDEN,
-        error: 'Access denied. You are not the owner of this analysis.'
-      })
-    }
-
-    return res.status(StatusCodes.OK).json({
-      status: StatusCodes.OK,
-      parsed_file: responseList.data[0].content[0].text
+  if (!owner || owner.id !== requestingUser.id) {
+    return res.status(StatusCodes.FORBIDDEN).json({
+      status: StatusCodes.FORBIDDEN,
+      error: 'Access denied. You are not the owner of this analysis.'
     })
-  } catch (error) {
-    handleError(error, res)
   }
+
+  return res.status(StatusCodes.OK).json({
+    status: StatusCodes.OK,
+    parsed_file: responseList.data[0].content[0].text
+  })
 }
 
 export const getAnalysisHistory = async (
@@ -178,15 +169,11 @@ export const getAnalysisHistory = async (
 
   const pageSize = Math.max(Number(limit) || 10, 1)
 
-  try {
-    const result = await getAnalysisHistoryService(
-      id,
-      cursor as string | undefined,
-      pageSize
-    )
+  const result = await getAnalysisHistoryService(
+    id,
+    cursor as string | undefined,
+    pageSize
+  )
 
-    return res.status(StatusCodes.OK).json(result)
-  } catch (error) {
-    handleError(error, res)
-  }
+  return res.status(StatusCodes.OK).json(result)
 }

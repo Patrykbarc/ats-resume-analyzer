@@ -65,9 +65,6 @@ vi.mock('../controllers/helper/checkout/handleInvoicePaymentFailed', () => ({
   handleInvoicePaymentFailed: vi.fn()
 }))
 
-vi.mock('../controllers/helper/handleError', () => ({
-  handleError: vi.fn()
-}))
 
 vi.mock('../lib/isStripeError', () => ({
   isStripeError: vi.fn(() => false)

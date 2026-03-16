@@ -34,9 +34,6 @@ vi.mock('./helper/auth/verifyIsTokenExpired', () => ({
   verifyIsTokenExpired: vi.fn()
 }))
 
-vi.mock('./helper/handleError', () => ({
-  handleError: vi.fn()
-}))
 
 import * as bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
@@ -57,7 +54,6 @@ describe('loginUser', () => {
       makeReq({ body: { email: 'a@b.com', password: 'pw' } }),
       makeRes()
     )
-    // handleError mock swallows errors; check direct case
     const res = makeRes()
     await loginUser(
       makeReq({ body: { email: 'a@b.com', password: 'pw' } }),

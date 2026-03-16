@@ -14,7 +14,10 @@ import {
 } from '../controllers/analyse.controller'
 import { requireAuth } from '../middleware/require-auth.middleware'
 import { requirePremium } from '../middleware/require-premium.middleware'
-import { validateData, validateFile } from '../middleware/validateEntries'
+import {
+  validateData,
+  validateFile
+} from '../middleware/validate-entries.middleware'
 
 const upload = multer({ storage: multer.memoryStorage() })
 const multipartParser = upload.single('file')

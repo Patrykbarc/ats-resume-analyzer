@@ -13,7 +13,6 @@ import { handleCheckoutSessionCompleted } from './helper/checkout/handleCheckout
 import { handleInvoicePaymentFailed } from './helper/checkout/handleInvoicePaymentFailed'
 import { handleSubscriptionDeleted } from './helper/checkout/handleSubscriptionDeleted'
 import { handleSubscriptionUpdated } from './helper/checkout/handleSubscriptionUpdated'
-import { handleError } from './helper/handleError'
 
 const {
   STRIPE_SECRET_KEY,
@@ -27,24 +26,20 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
 })
 
 export const createCheckoutSession = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.body
+  const { id } = req.body
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'subscription',
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
-      success_url: `${FRONTEND_URL}/checkout/success?id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${FRONTEND_URL}/checkout/cancel`,
-      metadata: { userId: id }
-    })
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'subscription',
+    line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+    success_url: `${FRONTEND_URL}/checkout/success?id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${FRONTEND_URL}/checkout/cancel`,
+    metadata: { userId: id }
+  })
 
-    const { url } = session
+  const { url } = session
 
-    res.status(StatusCodes.OK).json({ url })
-  } catch (error) {
-    handleError(error, res)
-  }
+  res.status(StatusCodes.OK).json({ url })
 }
 
 export const stripeWebhookHandler = async (req: Request, res: Response) => {
@@ -144,7 +139,7 @@ export const verifyPaymentSession = async (req: Request, res: Response) => {
       logger.error(`Stripe error while verifying session: ${error.message}`)
     }
 
-    handleError(error, res)
+    throw error
   }
 }
 
@@ -195,51 +190,47 @@ export const cancelSubscription = async (req: Request, res: Response) => {
       )
     }
 
-    handleError(error, res)
+    throw error
   }
 }
 
 export const restoreSubscription = async (req: Request, res: Response) => {
-  try {
-    const id = (req.user as { id: string }).id
+  const id = (req.user as { id: string }).id
 
-    const user = await findUserWithSubscription(id)
+  const user = await findUserWithSubscription(id)
 
-    if (!user?.stripeSubscriptionId) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: 'Subscription not found.' })
-    }
-
-    const subscription = await stripe.subscriptions.retrieve(
-      user.stripeSubscriptionId
-    )
-
-    if (!subscription.cancel_at_period_end) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        error: 'Subscription is not set to cancel or is already active.'
-      })
-    }
-
-    if (subscription.status === 'canceled') {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        error: 'Subscription is already canceled. Please start a new one.'
-      })
-    }
-
-    const updatedSubscription = await stripe.subscriptions.update(
-      user.stripeSubscriptionId,
-      {
-        cancel_at_period_end: false
-      }
-    )
-
-    await updateSubscriptionRestored(id, updatedSubscription.status)
-
-    res
-      .status(StatusCodes.OK)
-      .json({ message: 'Subscription resumed successfully.' })
-  } catch (error) {
-    handleError(error, res)
+  if (!user?.stripeSubscriptionId) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: 'Subscription not found.' })
   }
+
+  const subscription = await stripe.subscriptions.retrieve(
+    user.stripeSubscriptionId
+  )
+
+  if (!subscription.cancel_at_period_end) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: 'Subscription is not set to cancel or is already active.'
+    })
+  }
+
+  if (subscription.status === 'canceled') {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: 'Subscription is already canceled. Please start a new one.'
+    })
+  }
+
+  const updatedSubscription = await stripe.subscriptions.update(
+    user.stripeSubscriptionId,
+    {
+      cancel_at_period_end: false
+    }
+  )
+
+  await updateSubscriptionRestored(id, updatedSubscription.status)
+
+  res
+    .status(StatusCodes.OK)
+    .json({ message: 'Subscription resumed successfully.' })
 }
