@@ -1,8 +1,8 @@
 import express, { type Express } from 'express'
-import middleware from './middleware/middleware'
+import appMiddleware from './middleware/app.middleware'
 
 const app: Express = express()
 
-middleware(app)
+appMiddleware(app)
 
 export default app

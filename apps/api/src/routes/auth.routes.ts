@@ -19,7 +19,7 @@ import {
   verifyUser
 } from '../controllers/auth.controller'
 import { requireAuth } from '../middleware/require-auth.middleware'
-import { validateData } from '../middleware/validateEntries'
+import { validateData } from '../middleware/validate-entries.middleware'
 
 const router: Router = Router()
 
