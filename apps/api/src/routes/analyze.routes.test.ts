@@ -10,7 +10,6 @@ vi.mock('../lib/getEnv')
 vi.mock('../config/limiter.config', () => ({
   authAttemptLimiter: (_req: never, _res: never, next: () => void) => next(),
   analyzeLimiter: (_req: never, _res: never, next: () => void) => next(),
-  requestLimiter: (_req: never, _res: never, next: () => void) => next(),
   userAnalyzeLimiter: (_req: never, _res: never, next: () => void) => next()
 }))
 
@@ -34,20 +33,23 @@ vi.mock('../controllers/helper/analyze/parseFileAndSanitize', () => ({
   parseFileAndSanitize: vi.fn()
 }))
 
-vi.mock('../controllers/helper/analyze/analyzeFile', () => ({
-  analyzeFile: vi.fn()
-}))
-
 vi.mock('../controllers/helper/analyze/parseOpenAiApiResponse', () => ({
   parseOpenAiApiResponse: vi.fn()
 }))
 
-vi.mock('../controllers/helper/analyze/saveRequestLog', () => ({
-  saveRequestLog: vi.fn()
+vi.mock('../config/queue.config', () => ({
+  analyzeQueue: { add: vi.fn() }
 }))
 
+vi.mock('../config/redis.config', () => ({
+  redisClient: {
+    get: vi.fn(),
+    del: vi.fn()
+  }
+}))
 
-import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
+import { analyzeQueue } from '../config/queue.config'
+import { redisClient } from '../config/redis.config'
 import { parseFileAndSanitize } from '../controllers/helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from '../controllers/helper/analyze/parseOpenAiApiResponse'
 import { requireAuth } from '../middleware/require-auth.middleware'
@@ -65,32 +67,30 @@ describe('POST /api/cv/analyze/free', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('returns 400 when analysis returns an error', async () => {
+  it('returns 500 when queue fails', async () => {
     vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
-    vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
+    vi.mocked(prisma.analysisJob.create).mockRejectedValue(
+      new Error('DB error')
+    )
 
     const res = await request(app)
       .post(`${API_URL}/analyze/free`)
       .attach('file', FAKE_PDF, PDF_OPTS)
-    expect(res.statusCode).toBe(400)
+    expect(res.statusCode).toBe(500)
   })
 
-  it('returns 200 with analysis result on success', async () => {
+  it('returns 202 with jobId on success', async () => {
     vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
-    vi.mocked(analyzeFile).mockResolvedValue({
-      id: 'ai-123',
-      score: 90
+    vi.mocked(prisma.analysisJob.create).mockResolvedValue({
+      id: 'job-123'
     } as never)
+    vi.mocked(analyzeQueue.add).mockResolvedValue(undefined as never)
 
     const res = await request(app)
       .post(`${API_URL}/analyze/free`)
       .attach('file', FAKE_PDF, PDF_OPTS)
-    expect(res.statusCode).toBe(200)
-    expect(res.body).toMatchObject({
-      id: 'ai-123',
-      score: 90,
-      parsed_file: 'parsed text'
-    })
+    expect(res.statusCode).toBe(202)
+    expect(res.body).toMatchObject({ jobId: expect.any(String) })
   })
 })
 
@@ -118,7 +118,7 @@ describe('POST /api/cv/analyze/signed-in', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('returns 200 with analysis result on success', async () => {
+  it('returns 202 with jobId on success', async () => {
     vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
       req.user = {
         id: 'user-id',
@@ -129,16 +129,16 @@ describe('POST /api/cv/analyze/signed-in', () => {
       next()
     })
     vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
-    vi.mocked(analyzeFile).mockResolvedValue({
-      id: 'ai-456',
-      score: 85
+    vi.mocked(prisma.analysisJob.create).mockResolvedValue({
+      id: 'job-456'
     } as never)
+    vi.mocked(analyzeQueue.add).mockResolvedValue(undefined as never)
 
     const res = await request(app)
       .post(`${API_URL}/analyze/signed-in`)
       .attach('file', FAKE_PDF, PDF_OPTS)
-    expect(res.statusCode).toBe(200)
-    expect(res.body).toMatchObject({ id: 'ai-456' })
+    expect(res.statusCode).toBe(202)
+    expect(res.body).toMatchObject({ jobId: expect.any(String) })
   })
 })
 
@@ -172,7 +172,7 @@ describe('POST /api/cv/analyze/premium', () => {
     expect(res.statusCode).toBe(403)
   })
 
-  it('returns 200 on success for premium user', async () => {
+  it('returns 202 with jobId on success for premium user', async () => {
     vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
       req.user = {
         id: 'user-id',
@@ -187,16 +187,95 @@ describe('POST /api/cv/analyze/premium', () => {
       return undefined
     })
     vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
-    vi.mocked(analyzeFile).mockResolvedValue({
-      id: 'ai-789',
-      score: 95
+    vi.mocked(prisma.analysisJob.create).mockResolvedValue({
+      id: 'job-789'
     } as never)
+    vi.mocked(analyzeQueue.add).mockResolvedValue(undefined as never)
 
     const res = await request(app)
       .post(`${API_URL}/analyze/premium`)
       .attach('file', FAKE_PDF, PDF_OPTS)
+    expect(res.statusCode).toBe(202)
+    expect(res.body).toMatchObject({ jobId: expect.any(String) })
+  })
+})
+
+describe('GET /api/cv/analyze/job/:jobId', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns 404 when job not found', async () => {
+    vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue(null as never)
+
+    const res = await request(app).get(`${API_URL}/analyze/job/unknown-job`)
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('returns 200 with status PENDING', async () => {
+    vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue({
+      id: 'job-1',
+      status: 'PENDING'
+    } as never)
+
+    const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
     expect(res.statusCode).toBe(200)
-    expect(res.body).toMatchObject({ id: 'ai-789' })
+    expect(res.body).toMatchObject({ status: 'PENDING' })
+  })
+
+  it('returns 200 with status PROCESSING', async () => {
+    vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue({
+      id: 'job-1',
+      status: 'PROCESSING'
+    } as never)
+
+    const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toMatchObject({ status: 'PROCESSING' })
+  })
+
+  it('returns 200 with status FAILED and error', async () => {
+    vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue({
+      id: 'job-1',
+      status: 'FAILED',
+      error: 'Something went wrong'
+    } as never)
+
+    const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toMatchObject({
+      status: 'FAILED',
+      error: 'Something went wrong'
+    })
+  })
+
+  it('returns 200 with status COMPLETED and result from Redis', async () => {
+    const mockResult = {
+      score: 95,
+      parsed_file: 'resume text',
+      user: { id: 'user-id' }
+    }
+    vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue({
+      id: 'job-1',
+      status: 'COMPLETED'
+    } as never)
+    vi.mocked(redisClient.get).mockResolvedValue(
+      JSON.stringify(mockResult) as never
+    )
+    vi.mocked(redisClient.del).mockResolvedValue(1 as never)
+
+    const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toMatchObject({ status: 'COMPLETED', result: mockResult })
+  })
+
+  it('returns 404 when completed but result expired in Redis', async () => {
+    vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue({
+      id: 'job-1',
+      status: 'COMPLETED'
+    } as never)
+    vi.mocked(redisClient.get).mockResolvedValue(null as never)
+
+    const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
+    expect(res.statusCode).toBe(404)
   })
 })
 

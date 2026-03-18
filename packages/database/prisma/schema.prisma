@@ -14,6 +14,13 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum SubscriptionStatus {
   active
   past_due
@@ -68,6 +75,16 @@ model User {
 
   refreshToken String?      @unique
   requestLogs  RequestLog[]
+}
+
+model AnalysisJob {
+  id        String    @id
+  status    JobStatus @default(PENDING)
+  resultId  String?
+  error     String?
+  userId    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model CronLog {

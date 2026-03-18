@@ -19,10 +19,18 @@ vi.mock('jsonwebtoken', () => ({
 
 vi.mock('../lib/getEnv')
 
+vi.mock('../config/redis.config', () => ({
+  redisClient: { get: vi.fn(), del: vi.fn() },
+  bullMqConnectionOptions: {}
+}))
+
+vi.mock('../config/queue.config', () => ({
+  analyzeQueue: { add: vi.fn() }
+}))
+
 vi.mock('../config/limiter.config', () => ({
   authAttemptLimiter: (_req: never, _res: never, next: () => void) => next(),
   analyzeLimiter: (_req: never, _res: never, next: () => void) => next(),
-  requestLimiter: (_req: never, _res: never, next: () => void) => next(),
   userAnalyzeLimiter: (_req: never, _res: never, next: () => void) => next()
 }))
 
@@ -37,7 +45,11 @@ vi.mock('../controllers/helper/auth/createNewUser', () => ({
 
 vi.mock('../controllers/helper/auth/handleNewJwtTokens', () => ({
   handleNewJwtTokens: vi.fn(() => Promise.resolve('mocked-access-token')),
-  jwtRefreshCookieOptions: vi.fn(() => ({ httpOnly: true, secure: false, sameSite: 'lax' }))
+  jwtRefreshCookieOptions: vi.fn(() => ({
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax'
+  }))
 }))
 
 vi.mock('../controllers/helper/auth/verifyIsTokenExpired', () => ({

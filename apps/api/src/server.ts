@@ -8,6 +8,7 @@ import app from './app'
 import pinoConfig from './config/pino.config'
 import config from './config/server.config'
 import { getEnvs } from './lib/getEnv'
+import { createAnalyzeWorker } from './workers/analyze.worker'
 
 const { OPENAI_API_KEY, DATABASE_URL } = getEnvs()
 
@@ -18,6 +19,8 @@ export const prisma = new PrismaClient({
 })
 
 app.set('trust proxy', 1)
+
+const analyzeWorker = createAnalyzeWorker()
 
 const server = app.listen(config.port, async () => {
   const apiUrl = `http://localhost:${config.port}`
@@ -54,6 +57,8 @@ const gracefulShutdown = async (signal: string) => {
     logger.info('HTTP server closed')
 
     try {
+      await analyzeWorker.close()
+      logger.info('Worker closed')
       await prisma.$disconnect()
       logger.info('Database connection closed')
       process.exit(0)

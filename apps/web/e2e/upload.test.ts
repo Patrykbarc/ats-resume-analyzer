@@ -28,7 +28,15 @@ test('uploads a PDF and navigates to analysis results', async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(FAKE_ANALYSIS)
+      body: JSON.stringify({ jobId: 'test-job-id' })
+    })
+  })
+
+  await page.route('**/api/cv/analyze/job/test-job-id', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'COMPLETED', result: FAKE_ANALYSIS })
     })
   })
 

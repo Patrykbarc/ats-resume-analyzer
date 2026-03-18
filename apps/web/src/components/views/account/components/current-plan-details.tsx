@@ -2,7 +2,7 @@ import { CardContainer } from '@/components/ui/card'
 import { UserBillingInformation } from '../types/types'
 import { CancelSubscription } from './cancel-subscription'
 
-export function ActiveSubscriptionStatus({
+export function CurrentPlanDetails({
   id,
   nextBillingDate
 }: UserBillingInformation) {

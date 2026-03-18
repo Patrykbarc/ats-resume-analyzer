@@ -6,6 +6,7 @@ import { AxiosResponse } from 'axios'
 
 export type AnalysisDetails = AiAnalysis & {
   user?: Pick<UserSchemaType, 'id'> | null
+  parsed_file?: string
 }
 
 export type ParsedFileResponse = {
@@ -14,6 +15,47 @@ export type ParsedFileResponse = {
 }
 
 export type AnalyseResult = AxiosResponse<AnalysisDetails>
+
+type JobStatusResponse =
+  | { status: 'PENDING' | 'PROCESSING' }
+  | { status: 'FAILED'; error: string }
+  | { status: 'COMPLETED'; result: AnalysisDetails }
+
+const POLL_INTERVAL_MS = 2000
+
+export const pollJobResult = async (
+  jobId: string,
+  signal?: AbortSignal
+): Promise<AnalysisDetails> => {
+  while (true) {
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError')
+    }
+
+    const response = await apiClient.get<JobStatusResponse>(
+      `/cv/analyze/job/${jobId}`,
+      { signal }
+    )
+
+    const data = response.data
+
+    if (data.status === 'COMPLETED') {
+      return data.result
+    }
+
+    if (data.status === 'FAILED') {
+      throw new Error(data.error || 'Analysis failed')
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(resolve, POLL_INTERVAL_MS)
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timeout)
+        reject(new DOMException('Aborted', 'AbortError'))
+      })
+    })
+  }
+}
 
 export const submitAnalyseResume = async ({
   file,
@@ -41,14 +83,21 @@ export const submitAnalyseResume = async ({
     return '/cv/analyze/free'
   }
 
-  const response = await apiClient.post<AiAnalysis>(route(), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    signal
-  })
+  const submitResponse = await apiClient.post<{ jobId: string }>(
+    route(),
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      signal
+    }
+  )
 
-  return response
+  const { jobId } = submitResponse.data
+  const result = await pollJobResult(jobId, signal)
+
+  return { ...submitResponse, data: result }
 }
 
 export const getAnalysis = async (id: string) => {

@@ -1,20 +1,16 @@
 import { UserSchemaType } from '@monorepo/schemas'
-import type { AiAnalysis, AiAnalysisError } from '@monorepo/types'
+import type { AiAnalysis } from '@monorepo/types'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { promises as fs } from 'node:fs'
-import {
-  analyzeStore,
-  ipKeyGenerator,
-  userAnalyzeStore
-} from '../config/limiter.config'
-import { logger, openAiClient } from '../server'
+import { randomUUID } from 'node:crypto'
+import { analyzeQueue } from '../config/queue.config'
+import { redisClient } from '../config/redis.config'
+import { logger, openAiClient, prisma } from '../server'
 import {
   getAnalysisHistory as getAnalysisHistoryService,
-  getAnalysisOwner,
-  saveRequestLog
+  getAnalysisOwner
 } from '../services/analyse.service'
-import { analyzeFile } from './helper/analyze/analyzeFile'
 import { isPremiumUser } from './helper/analyze/isPremiumUser'
 import { parseFileAndSanitize } from './helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from './helper/analyze/parseOpenAiApiResponse'
@@ -28,69 +24,97 @@ export const createAnalyze = async (req: Request, res: Response) => {
       .json({ status: StatusCodes.BAD_REQUEST, error: 'No file sent.' })
   }
 
+  let buffer: Buffer
+
+  if (file.buffer) {
+    buffer = file.buffer
+  } else if (file.path) {
+    buffer = await fs.readFile(file.path)
+    await fs.unlink(file.path)
+  } else {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: StatusCodes.BAD_REQUEST,
+      error: 'Unsupported file upload method.'
+    })
+  }
+
   try {
-    let buffer: Buffer
-
-    if (file.buffer) {
-      buffer = file.buffer
-    } else if (file.path) {
-      buffer = await fs.readFile(file.path)
-
-      await fs.unlink(file.path)
-    } else {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: StatusCodes.BAD_REQUEST,
-        error: 'Unsupported file upload method.'
-      })
-    }
-
-    const sanitizedTextResult = await parseFileAndSanitize(buffer)
-
+    const extractedText = await parseFileAndSanitize(buffer)
     const user = req.user as UserSchemaType | undefined
+    const isPremium = isPremiumUser(user)
 
-    const signal = (req as Request & { signal?: AbortSignal }).signal
+    const jobId = randomUUID()
 
-    const analysisResult: AiAnalysis | AiAnalysisError = await analyzeFile(
-      sanitizedTextResult,
-      { premium: isPremiumUser(user), signal }
+    await prisma.analysisJob.create({
+      data: { id: jobId, userId: user?.id ?? null }
+    })
+
+    await analyzeQueue.add(
+      'analyze',
+      {
+        extractedText,
+        isPremium,
+        userId: user?.id ?? null,
+        fileName: file.originalname,
+        fileSize: file.size,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      },
+      { jobId }
     )
 
-    if ('error' in analysisResult) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: StatusCodes.BAD_REQUEST,
-        ...analysisResult
-      })
-    }
-
-    if (user?.id) {
-      await saveRequestLog({ user, resultId: analysisResult.id, req, file })
-    } else {
-      logger.warn(
-        'Unable to save request log: No user information available in request.'
-      )
-    }
-
-    return res.status(StatusCodes.OK).json({
-      status: StatusCodes.OK,
-      ...(analysisResult as AiAnalysis),
-      parsed_file: sanitizedTextResult
-    })
+    return res.status(StatusCodes.ACCEPTED).json({ jobId })
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      const key =
-        (req.user as { id?: string } | undefined)?.id ??
-        ipKeyGenerator(req.ip ?? 'unknown')
-
-      const store = req.user ? userAnalyzeStore : analyzeStore
-      await store.decrement(key)
-
-      if (!res.headersSent) {
-        res.status(499).end()
-      }
-      return
-    }
-    throw error
+    logger.error({ error }, 'Error creating analysis job')
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: 'Failed to enqueue analysis.'
+    })
   }
+}
+
+export const getJobStatus = async (
+  req: Request<{ jobId: string }>,
+  res: Response
+) => {
+  const { jobId } = req.params
+
+  const job = await prisma.analysisJob.findUnique({ where: { id: jobId } })
+
+  if (!job) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ status: StatusCodes.NOT_FOUND, error: 'Job not found.' })
+  }
+
+  if (job.status === 'PENDING' || job.status === 'PROCESSING') {
+    return res.status(StatusCodes.OK).json({ status: job.status })
+  }
+
+  if (job.status === 'FAILED') {
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: 'FAILED', error: job.error })
+  }
+
+  // COMPLETED — fetch result from Redis
+  const resultJson = await redisClient.get(`result:${jobId}`)
+
+  if (!resultJson) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: StatusCodes.NOT_FOUND,
+      error: 'Result has expired. Use GET /analysis/:id to retrieve it.'
+    })
+  }
+
+  await redisClient.del(`result:${jobId}`)
+
+  const result = JSON.parse(resultJson) as AiAnalysis & {
+    parsed_file: string
+    user: { id: string } | null
+  }
+
+  return res.status(StatusCodes.OK).json({ status: 'COMPLETED', result })
 }
 
 // It's typed manually due to a lack of types from OpenAi

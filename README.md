@@ -31,6 +31,7 @@ flowchart LR
     Resend["Resend\nemail"]
     SentryIO["Sentry.io\nerrors"]
     DB[("PostgreSQL")]
+    Redis[("Redis\nBullMQ queue\n+ result cache")]
   end
 
   User -->|"HTTPS"| Web
@@ -41,6 +42,8 @@ flowchart LR
   API --> Resend
   API --> SentryIO
   Web --> SentryIO
+  API -->|"enqueue job"| Redis
+  Redis -->|"job"| API
 
   Schemas -. "shared validation" .-> Web
   Schemas -. "shared validation" .-> API
@@ -56,33 +59,44 @@ flowchart TD
   Upload(["📄 Upload PDF"])
   Parse["Parse PDF\n→ extract text"]
   TierCheck{"User tier?"}
+  CreateJob[("Create AnalysisJob\nin PostgreSQL\n(status: PENDING)")]
+  Enqueue["Enqueue job\nto BullMQ / Redis"]
+  Return202(["Return 202\n{ jobId }"])
+  Poll["Client polls\nGET /analyze/job/:jobId"]
 
-  subgraph Free["Free tier"]
-    RateLimit["Rate limiter\ncheck"]
-    ModelFree["gpt-4.1-nano"]
+  subgraph Worker["BullMQ Worker"]
+    direction TB
+    MarkProcessing["Set status → PROCESSING"]
+
+    subgraph Free["Free tier"]
+      ModelFree["gpt-4.1-nano"]
+    end
+
+    subgraph SignedIn["Signed-in tier"]
+      ModelSignedIn["gpt-4.1-nano"]
+    end
+
+    subgraph Premium["Premium tier"]
+      ModelPremium["o3\nreasoning model"]
+    end
+
+    OpenAI["OpenAI Responses API\n→ returns stable id"]
+    SaveDB[("Save RequestLog\nto PostgreSQL")]
+    StoreResult["Cache result\nin Redis (TTL)"]
+    MarkCompleted["Set status → COMPLETED"]
   end
-
-  subgraph SignedIn["Signed-in tier"]
-    ModelSignedIn["gpt-4.1-nano"]
-  end
-
-  subgraph Premium["Premium tier"]
-    ModelPremium["o3\nreasoning model"]
-  end
-
-  OpenAI["OpenAI Responses API\n→ returns stable id"]
-  SaveDB[("Save analysis\nto PostgreSQL\n(OpenAI id as PK)")]
-  Return(["Return analysis id\nto client"])
 
   Upload --> Parse --> TierCheck
-  TierCheck -->|"unauthenticated"| RateLimit
-  RateLimit -->|"allowed"| ModelFree
-  TierCheck -->|"authenticated"| ModelSignedIn
-  TierCheck -->|"Stripe subscription active"| ModelPremium
-  ModelFree --> OpenAI
-  ModelSignedIn --> OpenAI
-  ModelPremium --> OpenAI
-  OpenAI --> SaveDB --> Return
+  TierCheck -->|"unauthenticated"| CreateJob
+  TierCheck -->|"authenticated"| CreateJob
+  TierCheck -->|"premium"| CreateJob
+  CreateJob --> Enqueue --> Return202
+  Return202 --> Poll
+
+  Enqueue --> MarkProcessing
+  MarkProcessing --> ModelFree & ModelSignedIn & ModelPremium
+  ModelFree & ModelSignedIn & ModelPremium --> OpenAI
+  OpenAI --> SaveDB --> StoreResult --> MarkCompleted
 ```
 
 ### Auth Flow
@@ -123,6 +137,7 @@ sequenceDiagram
 - 🤖 AI-powered evaluation using OpenAI
 - 📊 Detailed ATS compatibility scoring
 - 💡 Actionable recommendations for improvement
+- ⚡ Async analysis processing via BullMQ job queue
 - 🔐 User authentication
 - 📧 Email verification with Resend
 - ⭐ Premium subscription system
@@ -152,6 +167,8 @@ sequenceDiagram
 - Passport.js
 - Prisma ORM
 - PostgreSQL
+- Redis
+- BullMQ
 - Resend
 - Multer
 - Sentry
@@ -168,6 +185,7 @@ Before you begin, ensure you have the following installed:
 - **Node.js** (v24 or higher)
 - **pnpm** (v10 or higher)
 - **PostgreSQL** database
+- **Redis** instance (local or managed, e.g. Upstash)
 - **OpenAI API Key** - Get one from [OpenAI Platform](https://platform.openai.com/)
 - **Resend API Key** - For email verification
 
@@ -233,6 +251,9 @@ CRON_SECRET_KEY=your_random_cron_key
 
 # Sentry
 SENTRY_DSN=your_sentry_dsn_here
+
+# Redis (used by BullMQ job queue and result cache)
+REDIS_URL=redis://localhost:6379
 ```
 
 #### Web Configuration
@@ -247,6 +268,8 @@ cp .env.template .env
 Edit `apps/web/.env` and configure the following variables:
 
 ```env
+VITE_NODE_ENV="development"
+
 # API server URL for frontend requests
 VITE_API_URL=http://localhost:8080
 
@@ -336,6 +359,10 @@ Free and signed-in analyses use `gpt-4.1-nano` (fast, low-cost). Premium analyse
 
 The backend uses the OpenAI **Responses API** (`openAiClient.responses.create`) rather than the legacy Chat Completions API. The Responses API returns a stable `id` alongside the output text, which is stored and used as the analysis record's primary key — enabling idempotent webhook re-delivery without duplicating records.
 
+### Async Analysis via BullMQ
+
+AI analysis runs inside a BullMQ worker rather than inline in the HTTP request handler. The API creates an `AnalysisJob` record in PostgreSQL, enqueues the job to Redis, and immediately returns `202 Accepted` with a `jobId`. The worker processes the job independently — calling OpenAI, saving the `RequestLog`, caching the result in Redis, and updating the job status. The client polls `GET /analyze/job/:jobId` until the job is `COMPLETED` or `FAILED`. This keeps request latency predictable, prevents HTTP timeouts on slow AI responses, and decouples the web tier from the processing tier.
+
 ### Vitest for Testing
 
 Vitest is ESM-native and shares configuration with the existing Vite/tsup build toolchain, eliminating the CJS/ESM transform issues that arise when using Jest with this stack. A single test runner covers both the Node.js API (`environment: 'node'`) and the React frontend (`environment: 'jsdom'`).
@@ -363,11 +390,13 @@ ats-resume-analyzer/
 │   │   ├── src/
 │   │   │   ├── config/      # Configuration (CORS, Passport, Pino, etc.)
 │   │   │   ├── controllers/ # Request handlers
+│   │   │   ├── lib/         # Utilities and helpers
 │   │   │   ├── middleware/  # Express middleware (auth, rate limit, validation)
 │   │   │   ├── prompt/      # AI prompts (standard & pro)
 │   │   │   ├── routes/      # API routes
-│   │   │   ├── services/    # Business logic (email service)
-│   │   │   └── templates/   # Email templates
+│   │   │   ├── services/    # Business logic (auth, email, analysis)
+│   │   │   ├── templates/   # Email templates
+│   │   │   └── workers/     # BullMQ job workers
 │   │   └── package.json
 │   └── web/                 # Frontend React application
 │       ├── src/
@@ -480,24 +509,55 @@ Reset password with token.
 
 Endpoints are under `/api/cv`:
 
+#### Submit analysis
+
 - `POST /api/cv/analyze/free` — public analysis, multipart with `file`
 - `POST /api/cv/analyze/signed-in` — requires auth
 - `POST /api/cv/analyze/premium` — requires premium subscription
-- `GET /api/cv/analysis/:id` — fetch analysis by id
-- `GET /api/cv/analysis-history/:id?cursor=<analyseId>&limit=10` — paginated history (cursor-based)
 
-Request format (for analyze endpoints):
+All three endpoints respond with **`202 Accepted`**:
+
+```json
+{ "jobId": "uuid" }
+```
+
+Request format:
 
 - Method: `POST`
 - Content-Type: `multipart/form-data`
 - Body: `file` (PDF file)
 - Auth: varies by endpoint
 
-### Health Check
+#### Poll job status
+
+`GET /api/cv/analyze/job/:jobId`
+
+Returns one of:
+
+```json
+{ "status": "PENDING" }
+{ "status": "PROCESSING" }
+{ "status": "FAILED", "error": "reason" }
+{ "status": "COMPLETED", "result": { ... } }
+```
+
+The `result` object is deleted from Redis after the first successful read, so fetch it once and store it on the client.
+
+#### Retrieve stored analysis
+
+- `GET /api/cv/analysis/:id` — fetch full analysis by OpenAI response id
+- `GET /api/cv/analysis/:id/parsed-file` — fetch extracted resume text (owner only)
+- `GET /api/cv/analysis-history/:id?cursor=<analyseId>&limit=10` — paginated history (cursor-based)
+
+### Health & Cron
 
 #### `GET /health`
 
 Check API health status.
+
+#### `GET /api/cron/keep-alive`
+
+Keep-alive ping for the API server (e.g. to prevent Render cold starts). Requires `x-cron-secret` header matching `CRON_SECRET_KEY`.
 
 ### Checkout (Premium)
 
@@ -511,8 +571,10 @@ Check API health status.
 
 1. **Upload**: User uploads a PDF resume through the web interface
 2. **Parse**: The PDF is parsed to extract text content
-3. **Analyze**: Content is sent to OpenAI API for ATS compatibility analysis
-4. **Report**: User receives a detailed report with:
+3. **Enqueue**: An `AnalysisJob` record is created in PostgreSQL and the job is pushed to a BullMQ queue backed by Redis. The API immediately returns `202 Accepted` with a `jobId`
+4. **Process**: A BullMQ worker picks up the job, calls the OpenAI Responses API (model depends on user tier), saves a `RequestLog` to PostgreSQL, and stores the result in Redis
+5. **Poll**: The client polls `GET /analyze/job/:jobId` until status is `COMPLETED` (or `FAILED`)
+6. **Report**: User receives a detailed report with:
    - ATS compatibility score
    - Strengths and weaknesses
    - Actionable recommendations
@@ -540,6 +602,8 @@ Applicant Tracking Systems are opaque by design — candidates submit resumes an
 
 ### Challenges
 
+**Async job result delivery** — The BullMQ worker caches the completed analysis in Redis under `result:<jobId>`. The first successful `GET /analyze/job/:jobId` response deletes the key, so the result is consumed exactly once. If the client never reads it (e.g., tab closed), the key expires via Redis TTL and the full analysis remains accessible via `GET /analysis/:id` using the stable OpenAI response id stored in PostgreSQL.
+
 **Stripe webhook idempotency** — Stripe can deliver the same webhook event more than once. The `handleCheckoutSessionCompleted` handler is safe to re-run: it checks whether the subscription is already active before writing to the database, preventing duplicate premium grants on re-delivery.
 
 **XSS-safe token storage** — Storing the JWT in a JS module variable (rather than `localStorage` or a non-`httpOnly` cookie) required building a silent refresh mechanism. On every page load, the React app calls `POST /auth/refresh` using the `httpOnly` cookie; if the cookie is valid the server returns a fresh access token and the user session is restored seamlessly.
@@ -548,8 +612,6 @@ Applicant Tracking Systems are opaque by design — candidates submit resumes an
 
 ### What Would Change at Scale
 
-- **Job queue** — AI analysis is handled inline in the HTTP request lifecycle. At scale this would move to a queue (e.g., BullMQ backed by Redis) so the response returns immediately and the client polls or receives a webhook when the analysis is ready.
-- **Redis for rate limiting** — The current in-memory rate limiter is per-instance and resets on deploy. Redis-backed limiting would be shared across multiple API instances.
 - **Read replicas** — The analysis history query runs against the primary database. Under high read volume, a read replica would offload these queries and keep write latency predictable.
 - **Persistent file storage** — Uploaded PDFs are currently parsed in memory and discarded. Persisting them to object storage (e.g., S3) would enable re-analysis without re-upload and support future features like diff comparison between resume versions.
 
