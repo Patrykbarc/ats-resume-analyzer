@@ -10,6 +10,7 @@ import {
   createAnalyze,
   getAnalysis,
   getAnalysisHistory,
+  getJobStatus,
   getParsedFile
 } from '../controllers/analyse.controller'
 import { requireAuth } from '../middleware/require-auth.middleware'
@@ -48,6 +49,8 @@ router.post(
   validateFile(FileSchema),
   createAnalyze
 )
+
+router.get('/analyze/job/:jobId', getJobStatus)
 
 router.get('/analysis/:id', validateData(AnalysisParamsSchema), getAnalysis)
 router.get(

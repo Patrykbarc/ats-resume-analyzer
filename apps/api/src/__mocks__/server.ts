@@ -10,6 +10,10 @@ export const prisma = {
   requestLog: {
     findMany: vi.fn(),
     count: vi.fn()
+  },
+  analysisJob: {
+    create: vi.fn(),
+    findUnique: vi.fn()
   }
 }
 

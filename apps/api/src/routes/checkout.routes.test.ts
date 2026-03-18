@@ -27,10 +27,18 @@ vi.mock('../server')
 
 vi.mock('../lib/getEnv')
 
+vi.mock('../config/redis.config', () => ({
+  redisClient: { get: vi.fn(), del: vi.fn() },
+  bullMqConnectionOptions: {}
+}))
+
+vi.mock('../config/queue.config', () => ({
+  analyzeQueue: { add: vi.fn() }
+}))
+
 vi.mock('../config/limiter.config', () => ({
   authAttemptLimiter: (_req: never, _res: never, next: () => void) => next(),
   analyzeLimiter: (_req: never, _res: never, next: () => void) => next(),
-  requestLimiter: (_req: never, _res: never, next: () => void) => next(),
   userAnalyzeLimiter: (_req: never, _res: never, next: () => void) => next()
 }))
 
@@ -64,7 +72,6 @@ vi.mock('../controllers/helper/checkout/handleSubscriptionDeleted', () => ({
 vi.mock('../controllers/helper/checkout/handleInvoicePaymentFailed', () => ({
   handleInvoicePaymentFailed: vi.fn()
 }))
-
 
 vi.mock('../lib/isStripeError', () => ({
   isStripeError: vi.fn(() => false)
