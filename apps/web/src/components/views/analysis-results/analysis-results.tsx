@@ -1,9 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '@/components/ui/tooltip'
 import { useGetParsedFile } from '@/hooks/useGetParsedFile'
 import { AnalysisDetails } from '@/services/analyseService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
@@ -12,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { ShareButton } from '../share-button'
 import { AnalysisCardsSkeleton } from './components/analysis-results-skeleton'
 import { AnalysisSummary } from './components/analysis-summary'
-import { CallToActionCard } from './components/call-to-action-card'
+import { PricingCardList } from './components/pricing-card-list'
 
 const AnalysisSections = lazy(() =>
   import('./components/analysis-sections').then((module) => ({
@@ -42,13 +37,13 @@ type AnalysisResultsProps = {
 }
 
 export function AnalysisResults({ analysis }: AnalysisResultsProps) {
-  const { user } = useSessionStore()
+  const { user, isPremium } = useSessionStore()
   const analysisOwner = analysis.user?.id
 
-  const shouldDisablePreview = user?.id === analysisOwner ? false : true
-  const isOwner = !shouldDisablePreview
+  const isOwner = user?.id === analysisOwner
+  const canAccessPreview = isOwner && isPremium
   const { data: parsedFileData, isLoading: isParsedFileLoading } =
-    useGetParsedFile(analysis.id, isOwner)
+    useGetParsedFile(analysis.id, canAccessPreview)
 
   return (
     <Tabs className="space-y-6" defaultValue={TABS.analyse.value}>
@@ -56,15 +51,8 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         <TabsTrigger value={TABS.analyse.value}>
           {TABS.analyse.trigger}
         </TabsTrigger>
-        <TabsTrigger value={TABS.preview.value} disabled={shouldDisablePreview}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p>{TABS.preview.trigger}</p>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Preview available to owner only</p>
-            </TooltipContent>
-          </Tooltip>
+        <TabsTrigger value={TABS.preview.value}>
+          {TABS.preview.trigger}
         </TabsTrigger>
       </TabsList>
 
@@ -83,7 +71,7 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
           {analysis.premium_modules ? (
             <PremiumModules premium={analysis.premium_modules} />
           ) : (
-            <CallToActionCard />
+            <PricingCardList className="max-w-full" showFeatures={false} />
           )}
         </div>
 
@@ -93,33 +81,42 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         />
       </TabsContent>
 
-      {!shouldDisablePreview && (
-        <TabsContent className="space-y-6" value={TABS.preview.value}>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">Preview</h2>
-            <p className="text-muted-foreground max-w-3xl text-pretty">
-              This is the raw, unformatted text extracted from your document.
-              ATS systems analyze this exact content, meaning any errors in
-              parsing (like missing formatting or broken line breaks) can
-              severely impact their ability to read key information.
-            </p>
-          </div>
+      <TabsContent className="space-y-6" value={TABS.preview.value}>
+        {canAccessPreview ? (
+          <>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">Preview</h2>
+              <p className="text-muted-foreground max-w-3xl text-pretty">
+                This is the raw, unformatted text extracted from your document.
+                ATS systems analyze this exact content, meaning any errors in
+                parsing (like missing formatting or broken line breaks) can
+                severely impact their ability to read key information.
+              </p>
+            </div>
 
-          <Card>
-            <CardContent>
-              {isParsedFileLoading ? (
-                <p className="text-muted-foreground">Loading preview...</p>
-              ) : (
-                <p className="whitespace-pre-line">
-                  {parsedFileData?.parsed_file}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      )}
+            <Card>
+              <CardContent>
+                {isParsedFileLoading ? (
+                  <p className="text-muted-foreground">Loading preview...</p>
+                ) : (
+                  <p className="whitespace-pre-line">
+                    {parsedFileData?.parsed_file}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            <h2 className="mb-6 text-2xl text-muted-foreground">
+              To access the preview, please upgrade to a premium plan
+            </h2>
+            <PricingCardList className="max-w-full" showFeatures={false} />
+          </>
+        )}
+      </TabsContent>
 
-      <ShareButton id={analysis.id} />
+      {canAccessPreview && <ShareButton id={analysis.id} />}
     </Tabs>
   )
 }

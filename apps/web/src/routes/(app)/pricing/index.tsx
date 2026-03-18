@@ -1,5 +1,6 @@
 import { buttonVariants } from '@/components/ui/button'
-import { PricingCard } from '@/components/ui/pricing-card'
+import { PricingCardList } from '@/components/views/analysis-results/components/pricing-card-list'
+
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { getEnvs } from '@/lib/getEnv'
 import { createFileRoute } from '@tanstack/react-router'
@@ -15,34 +16,7 @@ export const Route = createFileRoute('/(app)/pricing/')({
   })
 })
 
-export type PricingPlan = typeof plan
-
-const plan = [
-  {
-    name: 'Pro Analyst',
-    description: 'Everything you need to land your dream job',
-    price: 14.99,
-    period: 'month',
-    features: [
-      'Unlimited resume analyses per month',
-      'GPT-4 powered deep-dive analysis',
-      'ATS optimization with keyword matching',
-      'Content & structure recommendations',
-      'Cover letter analysis & generation',
-      'Interview preparation guide',
-      'LinkedIn profile optimization tips',
-      'Skills gap analysis',
-      'Salary negotiation insights',
-      'Career path recommendations'
-    ],
-    cta: {
-      title: 'Get started',
-      url: getEnvs().VITE_PAYMENT_PUBLIC_KEY
-    }
-  }
-] as const
-
-const brief = [
+export const brief = [
   'Unlimited Resume Analyses/Month',
   'GPT-4 Deep Analysis',
   'Career Guidance'
@@ -99,13 +73,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <div className="flex justify-center">
-          <div className="w-full max-w-md">
-            {plan.map((plan) => (
-              <PricingCard key={plan.name} {...plan} />
-            ))}
-          </div>
-        </div>
+        <PricingCardList />
       </section>
 
       <section className="mt-16">

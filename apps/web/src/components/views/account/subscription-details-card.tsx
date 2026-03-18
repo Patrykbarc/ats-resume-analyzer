@@ -10,7 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { CreditCard } from 'lucide-react'
-import { ActiveSubscriptionStatus } from './components/active-subscription-status'
+import { CurrentPlanDetails } from './components/current-plan-details'
 import { CanceledSubscriptionStatus } from './components/canceled-subscription-status'
 import { ExpiredSubscriptionStatus } from './components/expired-subscription-status'
 import { UserBillingInformation } from './types/types'
@@ -51,7 +51,7 @@ export function SubscriptionDetailsCard({
         )}
 
         {subscriptionStatus === 'active' && !cancelAtPeriodEnd && (
-          <ActiveSubscriptionStatus id={id} nextBillingDate={nextBillingDate} />
+          <CurrentPlanDetails id={id} nextBillingDate={nextBillingDate} />
         )}
 
         {isPendingCancel && (
