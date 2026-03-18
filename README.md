@@ -268,6 +268,8 @@ cp .env.template .env
 Edit `apps/web/.env` and configure the following variables:
 
 ```env
+VITE_NODE_ENV="development"
+
 # API server URL for frontend requests
 VITE_API_URL=http://localhost:8080
 
@@ -388,11 +390,13 @@ ats-resume-analyzer/
 │   │   ├── src/
 │   │   │   ├── config/      # Configuration (CORS, Passport, Pino, etc.)
 │   │   │   ├── controllers/ # Request handlers
+│   │   │   ├── lib/         # Utilities and helpers
 │   │   │   ├── middleware/  # Express middleware (auth, rate limit, validation)
 │   │   │   ├── prompt/      # AI prompts (standard & pro)
 │   │   │   ├── routes/      # API routes
-│   │   │   ├── services/    # Business logic (email service)
-│   │   │   └── templates/   # Email templates
+│   │   │   ├── services/    # Business logic (auth, email, analysis)
+│   │   │   ├── templates/   # Email templates
+│   │   │   └── workers/     # BullMQ job workers
 │   │   └── package.json
 │   └── web/                 # Frontend React application
 │       ├── src/
@@ -545,11 +549,15 @@ The `result` object is deleted from Redis after the first successful read, so fe
 - `GET /api/cv/analysis/:id/parsed-file` — fetch extracted resume text (owner only)
 - `GET /api/cv/analysis-history/:id?cursor=<analyseId>&limit=10` — paginated history (cursor-based)
 
-### Health Check
+### Health & Cron
 
 #### `GET /health`
 
 Check API health status.
+
+#### `GET /api/cron/keep-alive`
+
+Keep-alive ping for the API server (e.g. to prevent Render cold starts). Requires `x-cron-secret` header matching `CRON_SECRET_KEY`.
 
 ### Checkout (Premium)
 
@@ -604,7 +612,6 @@ Applicant Tracking Systems are opaque by design — candidates submit resumes an
 
 ### What Would Change at Scale
 
-- **Redis for rate limiting** — The current in-memory rate limiter is per-instance and resets on deploy. Redis-backed limiting would be shared across multiple API instances.
 - **Read replicas** — The analysis history query runs against the primary database. Under high read volume, a read replica would offload these queries and keep write latency predictable.
 - **Persistent file storage** — Uploaded PDFs are currently parsed in memory and discarded. Persisting them to object storage (e.g., S3) would enable re-analysis without re-upload and support future features like diff comparison between resume versions.
 
