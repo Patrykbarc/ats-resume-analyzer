@@ -114,7 +114,8 @@ function PricingCard({
         ) : (
           <Link
             className={buttonVariants({ variant: 'default' })}
-            to="/pricing"
+            to="/login"
+            search={{ redirect: '/pricing' }}
           >
             {cta.title}
           </Link>

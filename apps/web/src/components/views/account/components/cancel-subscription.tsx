@@ -55,7 +55,7 @@ export function CancelSubscription({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <div className="flex justify-center items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="size-5 text-destructive" />
             <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
           </div>
