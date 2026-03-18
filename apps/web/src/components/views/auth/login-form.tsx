@@ -14,7 +14,7 @@ import { LoginUserSchema, LoginUserSchemaType } from '@monorepo/schemas'
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import toast from 'react-hot-toast'
 import { AuthErrorMessages } from './components/auth-error-messages'
 import { AuthFormFields } from './types/types'
@@ -36,6 +36,7 @@ const FORM_FIELDS: AuthFormFields<LoginUserSchemaType>[] = [
 
 export function LoginForm() {
   const navigate = useNavigate()
+  const { redirect } = useSearch({ from: '/_auth/login/' })
   const queryClient = useQueryClient()
   const { setAuthToken, setUser, setIsUserLoggedIn, setIsPremium } =
     useSessionStore()
@@ -57,7 +58,7 @@ export function LoginForm() {
       }
 
       toast.success('Logged in successfully!')
-      navigate({ to: '/' })
+      navigate({ to: redirect ?? '/' })
     },
     onError: (err) => {
       sentryLogger.unexpected(err)

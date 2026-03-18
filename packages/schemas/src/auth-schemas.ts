@@ -60,6 +60,12 @@ const LoginUserSchema = RegisterUserBaseSchema.pick({ email: true }).extend({
   password: PasswordLoginSchema
 })
 
+const LoginSearchSchema = z.object({
+  redirect: z.string().optional()
+})
+
+type LoginSearchSchemaType = z.infer<typeof LoginSearchSchema>
+
 const SubscriptionStatus = [
   'active',
   'past_due',
@@ -94,12 +100,14 @@ type ResendEmailValidationSchemaType = z.infer<
 type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>
 
 export {
+  LoginSearchSchema,
   LoginUserSchema,
   RegisterUserSchema,
   ResendEmailValidationSchema,
   ResetPasswordSchema,
   UserSchema,
   VerifyUserSchema,
+  type LoginSearchSchemaType,
   type LoginUserSchemaType,
   type RegisterUserSchemaType,
   type ResendEmailValidationSchemaType,
