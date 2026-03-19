@@ -3,7 +3,7 @@ import { getCurrentUserService } from '@/services/authService'
 import { QueryClient } from '@tanstack/react-query'
 import { redirect } from '@tanstack/react-router'
 
-export async function withSessionGuard({
+export async function sessionGuard({
   queryClient
 }: {
   queryClient: QueryClient

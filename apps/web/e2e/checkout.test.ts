@@ -88,10 +88,8 @@ test('verify error after guard passes → shows error state', async ({ page }) =
   await expect(page.getByText('Verification Error')).toBeVisible({ timeout: 15000 })
 })
 
-test('valid session → cancel page shows order cancelled', async ({ page }) => {
+test('cancel page shows order cancelled (no guard)', async ({ page }) => {
   await mockAuthRefresh(page)
-  await mockAuthMe(page)
-  await mockVerifyPayment(page, 200)
 
   await page.goto('/checkout/cancel?id=cs_test_123')
 
@@ -101,13 +99,10 @@ test('valid session → cancel page shows order cancelled', async ({ page }) => 
   ).toBeVisible()
 })
 
-test('invalid session on cancel → redirects to /pricing', async ({ page }) => {
+test('cancel page shows even with invalid session id', async ({ page }) => {
   await mockAuthRefresh(page)
-  await mockAuthMe(page)
-  await mockVerifyPayment(page, 400)
 
   await page.goto('/checkout/cancel?id=cs_invalid')
 
-  await page.waitForURL('**/pricing')
-  await expect(page).toHaveURL('/pricing')
+  await expect(page.getByText('Order Cancelled')).toBeVisible()
 })

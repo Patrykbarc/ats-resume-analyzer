@@ -3,7 +3,7 @@ import { AccountInformationCardSkeleton } from '@/components/views/account/compo
 import { SubscriptionDetailsCardSkeleton } from '@/components/views/account/components/skeletons/subscription-details-card-skeleton'
 import { SubscriptionDetailsCard } from '@/components/views/account/subscription-details-card'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { withSessionGuard } from '@/guards/withSessionGuard'
+import { sessionGuard } from '@/guards/sessionGuard'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { getUserAccountInformationsService } from '@/services/authService'
 import { useQuery } from '@tanstack/react-query'
@@ -12,7 +12,7 @@ import { format } from 'date-fns'
 
 export const Route = createFileRoute('/(app)/account/')({
   beforeLoad: async ({ context: { queryClient } }) =>
-    withSessionGuard({ queryClient }),
+    sessionGuard({ queryClient }),
   loader: async ({ context: { queryClient } }) => {
     return await queryClient.ensureQueryData({
       queryKey: QUERY_KEYS.session.account,

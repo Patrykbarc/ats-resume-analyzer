@@ -33,7 +33,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     mode: 'subscription',
     line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
     success_url: `${FRONTEND_URL}/checkout/success?id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${FRONTEND_URL}/checkout/cancel`,
+    cancel_url: `${FRONTEND_URL}/checkout/cancel?id={CHECKOUT_SESSION_ID}`,
     metadata: { userId: id }
   })
 
