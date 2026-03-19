@@ -32,7 +32,7 @@ const plans = [
   }
 ] as const
 
-export type PricingPlan = typeof plans
+type PricingPlanType = (typeof plans)[number]
 
 export function PricingCardList({
   showFeatures = true,
@@ -58,7 +58,7 @@ function PricingCard({
   features,
   cta,
   showFeatures
-}: PricingPlan[number] & { showFeatures: boolean }) {
+}: PricingPlanType & { showFeatures: boolean }) {
   const navigate = useNavigate()
   const { isUserLoggedIn } = useSessionStore()
   const { user } = useSessionStore()
@@ -92,47 +92,87 @@ function PricingCard({
       </div>
 
       <div className="flex flex-col px-6 py-8 h-full">
-        <div>
-          <h3 className="mb-2 text-xl font-semibold text-foreground">{name}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
+        <PricingCardTitle name={name} description={description} />
+        <PricingCardPrice price={price} period={period} />
+        <PricingCardCta
+          cta={cta}
+          isUserLoggedIn={isUserLoggedIn}
+          handleCheckoutMutation={handleCheckoutMutation}
+        />
 
-        {/* Price */}
-        <div className="my-6 flex items-baseline gap-1">
-          <span className="text-4xl font-bold text-foreground">${price}</span>
-          <span className="text-sm text-muted-foreground">/{period}</span>
-        </div>
-
-        {/* CTA Button */}
-        {isUserLoggedIn ? (
-          <Button
-            onClick={handleCheckoutMutation}
-            className="w-full font-semibold"
-          >
-            {cta.title}
-          </Button>
-        ) : (
-          <Link
-            className={buttonVariants({ variant: 'default' })}
-            to="/login"
-            search={{ redirect: '/pricing' }}
-          >
-            {cta.title}
-          </Link>
-        )}
-
-        {/* Features List */}
-        {showFeatures && (
-          <div className="space-y-4 mt-8">
-            {features.map((feature) => (
-              <div key={feature} className="flex gap-3">
-                <Check className="size-5 shrink-0 text-accent" />
-                <span className="text-sm text-foreground">{feature}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {showFeatures && <PremiumCardFeatures features={features} />}
       </div>
+    </div>
+  )
+}
+
+function PricingCardTitle({
+  name,
+  description
+}: {
+  name: PricingPlanType['name']
+  description: PricingPlanType['description']
+}) {
+  return (
+    <div>
+      <h3 className="mb-2 text-xl font-semibold text-foreground">{name}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  )
+}
+
+function PricingCardPrice({
+  price,
+  period
+}: {
+  price: PricingPlanType['price']
+  period: PricingPlanType['period']
+}) {
+  return (
+    <div className="my-6 flex items-baseline gap-1">
+      <span className="text-4xl font-bold text-foreground">${price}</span>
+      <span className="text-sm text-muted-foreground">/{period}</span>
+    </div>
+  )
+}
+
+function PricingCardCta({
+  isUserLoggedIn,
+  handleCheckoutMutation,
+  cta
+}: {
+  isUserLoggedIn: boolean
+  handleCheckoutMutation: () => void
+  cta: PricingPlanType['cta']
+}) {
+  return isUserLoggedIn ? (
+    <Button onClick={handleCheckoutMutation} className="w-full font-semibold">
+      {cta.title}
+    </Button>
+  ) : (
+    <Link
+      className={buttonVariants({ variant: 'default' })}
+      to="/login"
+      search={{ redirect: '/pricing' }}
+    >
+      {cta.title}
+    </Link>
+  )
+}
+
+function PremiumCardFeatures({
+  features
+}: {
+  features: PricingPlanType['features']
+}) {
+  return (
+    <div className="space-y-4 mt-8">
+      {features.map((feature) => (
+        <div key={feature} className="flex gap-3">
+          <Check className="size-5 shrink-0 text-accent" />
+          <span className="text-sm text-foreground">{feature}</span>
+        </div>
+      ))}
     </div>
   )
 }

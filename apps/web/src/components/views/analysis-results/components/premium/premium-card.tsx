@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import type { PropsWithChildren, ReactNode } from 'react'
 
-interface PremiumCardProps {
+type PremiumCardProps = {
   title: string
   description?: string
   actions?: ReactNode
