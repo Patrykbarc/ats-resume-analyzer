@@ -52,40 +52,32 @@ test('valid session → success page shows payment confirmed', async ({
   await expect(page.getByRole('link', { name: 'Return to home' })).toBeVisible()
 })
 
-test('invalid session on success → redirects to /pricing', async ({ page }) => {
+test('invalid session on success → shows verification error', async ({
+  page
+}) => {
   await mockAuthRefresh(page)
   await mockAuthMe(page)
   await mockVerifyPayment(page, 400)
 
   await page.goto('/checkout/success?id=cs_invalid')
 
-  await page.waitForURL('**/pricing')
-  await expect(page).toHaveURL('/pricing')
+  // React Query retries 3x with exponential backoff (~7s total) before showing error
+  await expect(page.getByText('Verification Error')).toBeVisible({
+    timeout: 15000
+  })
 })
 
-test('verify error after guard passes → shows error state', async ({ page }) => {
+test('invalid session on checkout guard → redirects to /pricing', async ({
+  page
+}) => {
   await mockAuthRefresh(page)
   await mockAuthMe(page)
+  await mockVerifyPayment(page, 400)
 
-  // First call (guard in beforeLoad) → 200; subsequent calls (component hook) → 500
-  let verifyCallCount = 0
-  await page.route('**/api/checkout/verify-payment*', async (route) => {
-    verifyCallCount++
-    await route.fulfill({
-      status: verifyCallCount === 1 ? 200 : 500,
-      contentType: 'application/json',
-      body: JSON.stringify(
-        verifyCallCount === 1
-          ? { success: true }
-          : { error: 'Internal server error' }
-      )
-    })
-  })
+  await page.goto('/checkout/?id=cs_invalid')
 
-  await page.goto('/checkout/success?id=cs_test_123')
-
-  // React Query retries 3x with exponential backoff (~7s total) before showing error
-  await expect(page.getByText('Verification Error')).toBeVisible({ timeout: 15000 })
+  await page.waitForURL('**/pricing')
+  await expect(page).toHaveURL('/pricing')
 })
 
 test('cancel page shows order cancelled (no guard)', async ({ page }) => {
