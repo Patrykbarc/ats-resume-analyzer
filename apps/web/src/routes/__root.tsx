@@ -16,7 +16,7 @@ import {
 import { Analytics } from '@vercel/analytics/react'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { Toaster } from 'react-hot-toast'
-import '../config/instrument.config.js'
+import '../config/sentry.config.js'
 import '../index.css'
 
 const RootLayout = () => {
