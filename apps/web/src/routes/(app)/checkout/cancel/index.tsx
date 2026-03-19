@@ -1,12 +1,8 @@
-import { checkoutSessionGuard } from '@/guards/checkoutSessionGuard'
 import { buildPageTitle } from '@/lib/buildPageTitle'
-import { CheckoutSessionIdSchema } from '@monorepo/schemas'
 import { createFileRoute } from '@tanstack/react-router'
 import { XCircle } from 'lucide-react'
 
 export const Route = createFileRoute('/(app)/checkout/cancel/')({
-  validateSearch: CheckoutSessionIdSchema,
-  beforeLoad: async ({ search }) => await checkoutSessionGuard(search.id),
   component: CancelledPage,
   head: () => ({
     meta: [

@@ -40,7 +40,6 @@ export function AnalysisHistory() {
   const pagination = history?.data?.pagination
   const incomingLogs = history?.data?.logs
 
-  // Append new page of results whenever a new cursor resolves
   useEffect(() => {
     if (!incomingLogs?.length) {
       return

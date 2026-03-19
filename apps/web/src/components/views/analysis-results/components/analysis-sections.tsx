@@ -13,6 +13,12 @@ type AiAnalysisSectionObject = {
 
 type TypedSectionArray = [keyof AiAnalysisSectionObject, string[]][]
 
+const ICONS_DATA = [
+  { icon: CheckCircle2, color: 'text-green-500' },
+  { icon: AlertCircle, color: 'text-yellow-500' },
+  { icon: Lightbulb, color: 'text-blue-500' }
+]
+
 export function AnalysisSections({
   sections
 }: {
@@ -23,13 +29,7 @@ export function AnalysisSections({
   return sectionsArr.map(([key, items], index) => {
     const title = capitalize(key.replaceAll('_', ' '))
 
-    const iconsData = [
-      { icon: CheckCircle2, color: 'text-green-500' },
-      { icon: AlertCircle, color: 'text-yellow-500' },
-      { icon: Lightbulb, color: 'text-blue-500' }
-    ]
-
-    const sectionIconData = iconsData[index % iconsData.length]
+    const sectionIconData = ICONS_DATA[index % ICONS_DATA.length]
 
     const IconComponent = sectionIconData.icon
     const iconColor = sectionIconData.color

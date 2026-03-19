@@ -3,21 +3,25 @@ import { AccountInformationCardSkeleton } from '@/components/views/account/compo
 import { SubscriptionDetailsCardSkeleton } from '@/components/views/account/components/skeletons/subscription-details-card-skeleton'
 import { SubscriptionDetailsCard } from '@/components/views/account/subscription-details-card'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { withSessionGuard } from '@/guards/withSessionGuard'
+import { sessionGuard } from '@/guards/sessionGuard'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { getUserAccountInformationsService } from '@/services/authService'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { format } from 'date-fns'
 
 export const Route = createFileRoute('/(app)/account/')({
   beforeLoad: async ({ context: { queryClient } }) =>
-    withSessionGuard({ queryClient }),
+    sessionGuard({ queryClient }),
   loader: async ({ context: { queryClient } }) => {
-    return await queryClient.ensureQueryData({
+    const data = await queryClient.ensureQueryData({
       queryKey: QUERY_KEYS.session.account,
       queryFn: getUserAccountInformationsService
     })
+    if (!data) {
+      throw redirect({ to: '/login' })
+    }
+    return data
   },
   component: RouteComponent,
   pendingComponent: LoadingComponent,

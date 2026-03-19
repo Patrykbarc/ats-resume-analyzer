@@ -15,7 +15,7 @@ export type AnalyzeJobData = {
 
 const RESULT_TTL_SECONDS = 60 * 60
 
-async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
+export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
   const {
     extractedText,
     isPremium,

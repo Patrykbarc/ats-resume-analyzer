@@ -89,11 +89,21 @@ type CurrentUserDetails = CurrentUser &
   >
 
 export const getUserAccountInformationsService = async () => {
-  const response = await apiClient<CurrentUserDetails | null>('/auth/me', {
-    params: { extended: true }
-  })
+  try {
+    const response = await apiClient<CurrentUserDetails | null>('/auth/me', {
+      params: { extended: true }
+    })
 
-  return response.data
+    return response.data
+  } catch (error) {
+    if (
+      isAxiosError(error) &&
+      error.response?.status === StatusCodes.UNAUTHORIZED
+    ) {
+      return null
+    }
+    throw error
+  }
 }
 
 export const requestPasswordReset = async (

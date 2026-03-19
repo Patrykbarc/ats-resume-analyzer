@@ -3,5 +3,6 @@ import { getEnvs } from '../lib/getEnv'
 
 Sentry.init({
   dsn: getEnvs().SENTRY_DSN,
-  sendDefaultPii: true
+  sendDefaultPii: true,
+  enabled: getEnvs().NODE_ENV === 'production'
 })

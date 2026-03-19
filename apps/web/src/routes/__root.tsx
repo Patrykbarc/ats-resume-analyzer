@@ -1,4 +1,5 @@
 import { Devtools } from '@/components/views/devtools'
+import { ErrorFallback } from '@/components/views/error-fallback'
 import { Footer } from '@/components/views/navigation/footer'
 import { Navigation } from '@/components/views/navigation/navigation'
 import { NotFound } from '@/components/views/not-found'
@@ -6,6 +7,7 @@ import { metaTags } from '@/constants/meta-tags'
 import { useAuth } from '@/hooks/useAuth'
 import { getEnvs } from '@/lib/getEnv'
 import { RouterContext } from '@/main'
+import * as Sentry from '@sentry/react'
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -14,7 +16,7 @@ import {
 import { Analytics } from '@vercel/analytics/react'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { Toaster } from 'react-hot-toast'
-import '../config/instrument.config.js'
+import '../config/sentry.config.js'
 import '../index.css'
 
 const RootLayout = () => {
@@ -33,8 +35,14 @@ const RootLayout = () => {
           <Navigation />
           <main className="flex-1 py-10">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-              <Outlet />
-              <Devtools />
+              <Sentry.ErrorBoundary
+                fallback={({ resetError }) => (
+                  <ErrorFallback resetError={resetError} />
+                )}
+              >
+                <Outlet />
+                <Devtools />
+              </Sentry.ErrorBoundary>
             </div>
           </main>
           <Footer />

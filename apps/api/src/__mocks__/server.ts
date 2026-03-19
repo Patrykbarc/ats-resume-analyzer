@@ -13,7 +13,8 @@ export const prisma = {
   },
   analysisJob: {
     create: vi.fn(),
-    findUnique: vi.fn()
+    findUnique: vi.fn(),
+    update: vi.fn()
   }
 }
 

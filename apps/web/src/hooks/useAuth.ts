@@ -1,10 +1,11 @@
 import { apiClient } from '@/api/apiClient'
 import { clearToken, setToken } from '@/api/tokenStorage'
 import { useSessionStore } from '@/stores/session/useSessionStore'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGetCurrentUser } from './useGetCurrentUser'
 
 export const useAuth = () => {
+  const hasAttemptedRefresh = useRef(false)
   const [hasRefreshed, setHasRefreshed] = useState(false)
 
   const {
@@ -24,6 +25,11 @@ export const useAuth = () => {
   } = useSessionStore()
 
   useEffect(() => {
+    if (hasAttemptedRefresh.current) {
+      return
+    }
+    hasAttemptedRefresh.current = true
+
     const refreshSession = async () => {
       try {
         const response = await apiClient.post('/auth/refresh')

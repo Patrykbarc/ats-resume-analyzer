@@ -1,8 +1,49 @@
 # ATS Resume Analyzer
 
-An intelligent web application that analyzes resumes for compatibility with Applicant Tracking Systems (ATS). Upload your CV and get instant feedback on how well it will perform in automated screening systems.
+A full-stack TypeScript monorepo that analyzes resumes for ATS (Applicant Tracking System) compatibility. Users upload a PDF; an async BullMQ worker calls the OpenAI Responses API and returns a structured score, keyword gaps, and actionable recommendations. Three user tiers (free / signed-in / premium) are enforced server-side and route to different AI models.
+
+Applicant Tracking Systems are opaque by design — candidates submit resumes and receive no feedback on why they were filtered out. This project gives candidates visibility into how ATS algorithms interpret their resume before they apply.
 
 🚀 **Live Demo**: [https://ats-scan.patrykbarc.com/](https://ats-scan.patrykbarc.com/)
+
+---
+
+## Tech Stack
+
+### Frontend
+
+| Technology | Role |
+|---|---|
+| React 19 + TypeScript | UI framework |
+| Vite | Build toolchain |
+| TanStack Router & Query | File-based routing with full TypeScript inference; data fetching |
+| Tailwind CSS 4 + Shadcn UI | Styling |
+| Zustand | Client state (auth token store) |
+| Axios | HTTP client |
+
+### Backend
+
+| Technology | Role |
+|---|---|
+| Node.js + Express 5 + TypeScript | API server |
+| Passport.js | Authentication strategy |
+| Prisma ORM + PostgreSQL | Persistent storage |
+| Redis + BullMQ | Async job queue and result cache |
+| OpenAI Responses API | AI analysis (`gpt-4.1-nano` / `o3`) |
+| Resend | Transactional email |
+| Stripe | Subscription billing |
+| Sentry | Error tracking |
+| Multer | PDF upload handling |
+
+### Monorepo
+
+| Technology | Role |
+|---|---|
+| pnpm workspaces + catalogs | Monorepo tooling; pinned shared dependency versions |
+| Shared packages | `@monorepo/schemas` (Zod), `database` (Prisma client), `types`, `constants`, `sentry-logger` |
+| Vitest | Unit + integration tests (API + web) |
+
+---
 
 ## Architecture
 
@@ -131,65 +172,136 @@ sequenceDiagram
   Web->>Web: restore in-memory token
 ```
 
+---
+
+## Key Engineering Decisions
+
+### Async Analysis via BullMQ
+
+AI analysis runs inside a BullMQ worker rather than inline in the HTTP request handler. The API creates an `AnalysisJob` record in PostgreSQL, enqueues the job to Redis, and immediately returns `202 Accepted` with a `jobId`. The worker processes the job independently — calling OpenAI, saving the `RequestLog`, caching the result in Redis, and updating the job status. The client polls `GET /analyze/job/:jobId` until the job is `COMPLETED` or `FAILED`. This keeps request latency predictable, prevents HTTP timeouts on slow AI responses, and decouples the web tier from the processing tier.
+
+### Tiered AI Models (gpt-4.1-nano / o3)
+
+Free and signed-in analyses use `gpt-4.1-nano` (fast, low-cost). Premium analyses use `o3` (reasoning model, higher accuracy). The tier is determined server-side after verifying the Stripe subscription, so the model choice cannot be spoofed by the client.
+
+### OpenAI Responses API with Idempotent Storage
+
+The backend uses the OpenAI **Responses API** (`openAiClient.responses.create`) rather than the legacy Chat Completions API. The Responses API returns a stable `id` alongside the output text, which is stored as the analysis record's primary key — enabling idempotent webhook re-delivery and preventing duplicate records on retry.
+
+### In-Memory Access Token Storage (XSS-safe JWT)
+
+The JWT access token is stored in a module-level JavaScript variable (`tokenStorage.ts`) rather than `localStorage`. Any XSS payload can read `localStorage`, but it cannot reach a plain JS variable in another module. Page refreshes re-hydrate the token silently via the `httpOnly` refresh token cookie (`POST /auth/refresh`), which is inaccessible to JavaScript entirely.
+
+### pnpm Monorepo with Shared Packages
+
+A single pnpm workspace hosts both apps (`api`, `web`) and five shared packages (`database`, `types`, `schemas`, `constants`, `sentry-logger`). The Zod schemas that validate API request bodies are reused directly in the React forms — a single source of truth that eliminates the class of bugs where frontend and backend silently diverge on what a valid request looks like. The `pnpm catalogs` feature pins shared dependency versions (Zod, Stripe, TypeScript, etc.) across all packages without duplicating version strings.
+
+### Cursor-Based Pagination
+
+The analysis history endpoint uses cursor pagination (`analyseId` as the cursor, ordered by `createdAt desc`) rather than offset pagination. Offset pagination becomes slow at large offsets and returns inconsistent results when new items are inserted between pages. The cursor approach stays O(log n) and stable regardless of concurrent writes.
+
+### Services Layer
+
+Business logic (DB queries, Stripe calls, OpenAI lookups) lives in `services/`, while controllers only parse requests and send responses. This separation makes the business logic unit-testable without spinning up Express.
+
+### TanStack Router over React Router
+
+TanStack Router provides file-based routing with full TypeScript inference for route params and search params. This avoids runtime `useParams()` / `useSearchParams()` casts and makes navigation type-safe end-to-end. The generated route tree is committed, so route changes are caught at compile time rather than at runtime.
+
+### Express 5
+
+Async route handlers propagate thrown errors to the error middleware automatically — no need for `try/catch` wrappers or `next(err)` calls in every handler.
+
+### Vitest for Testing
+
+Vitest is ESM-native and shares configuration with the existing Vite/tsup build toolchain, eliminating the CJS/ESM transform issues that arise when using Jest with this stack. A single test runner covers both the Node.js API (`environment: 'node'`) and the React frontend (`environment: 'jsdom'`).
+
+### Sentry for Error Tracking
+
+Sentry captures full stack traces, request context, and user metadata, then surfaces them in a searchable dashboard — making it practical to detect and triage production errors without digging through log files. The integration lives in the `sentry-logger` shared package so both the API and any future service share a single, consistently-configured client.
+
+---
+
+## Engineering Challenges
+
+**Async job result delivery** — The BullMQ worker caches the completed analysis in Redis under `result:<jobId>`. The first successful `GET /analyze/job/:jobId` response deletes the key, so the result is consumed exactly once. If the client never reads it (e.g., tab closed), the key expires via Redis TTL and the full analysis remains accessible via `GET /analysis/:id` using the stable OpenAI response id stored in PostgreSQL.
+
+**Stripe webhook idempotency** — Stripe can deliver the same webhook event more than once. The `handleCheckoutSessionCompleted` handler is safe to re-run: it checks whether the subscription is already active before writing to the database, preventing duplicate premium grants on re-delivery.
+
+**XSS-safe token storage** — Storing the JWT in a JS module variable (rather than `localStorage` or a non-`httpOnly` cookie) required building a silent refresh mechanism. On every page load, the React app calls `POST /auth/refresh` using the `httpOnly` cookie; if the cookie is valid the server returns a fresh access token and the user session is restored seamlessly.
+
+**ESM/CJS in the monorepo** — The shared packages are built to both ESM and CJS targets via `tsup`. Without this, the Node.js API (CJS at runtime) and the Vite-built frontend (ESM) would fail to resolve the same package. `pnpm catalogs` pins the exact version of each shared dependency across all workspaces without duplicating version strings.
+
+---
+
+## What Would Change at Scale
+
+- **Read replicas** — The analysis history query runs against the primary database. Under high read volume, a read replica would offload these queries and keep write latency predictable.
+- **Persistent file storage** — Uploaded PDFs are currently parsed in memory and discarded. Persisting them to object storage (e.g., S3) would enable re-analysis without re-upload and support future features like diff comparison between resume versions.
+
+---
+
 ## Features
 
-- 📄 PDF resume parsing and analysis
-- 🤖 AI-powered evaluation using OpenAI
-- 📊 Detailed ATS compatibility scoring
-- 💡 Actionable recommendations for improvement
-- ⚡ Async analysis processing via BullMQ job queue
-- 🔐 User authentication
-- 📧 Email verification with Resend
-- ⭐ Premium subscription system
-- 🛡️ Rate limiting and security
-- 🔍 Error tracking with Sentry
-- 🧪 Unit + E2E tests
+- PDF resume parsing and analysis
+- AI-powered evaluation using OpenAI (gpt-4.1-nano / o3)
+- Detailed ATS compatibility scoring with actionable recommendations
+- Async analysis processing via BullMQ job queue
+- User authentication with email verification
+- Premium subscription system via Stripe
+- Rate limiting and security
+- Error tracking with Sentry
+- Unit + E2E tests
 
-## Tech Stack
+---
 
-### Frontend
+## Project Structure
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS 4
-- TanStack Router & Query
-- Zustand
-- Shadcn UI
-- Axios
+```
+ats-resume-analyzer/
+├── apps/
+│   ├── api/                 # Backend Express server
+│   │   ├── src/
+│   │   │   ├── config/      # Configuration (CORS, Passport, Pino, etc.)
+│   │   │   ├── controllers/ # Request handlers
+│   │   │   ├── lib/         # Utilities and helpers
+│   │   │   ├── middleware/  # Express middleware (auth, rate limit, validation)
+│   │   │   ├── prompt/      # AI prompts (standard & pro)
+│   │   │   ├── routes/      # API routes
+│   │   │   ├── services/    # Business logic (auth, email, analysis)
+│   │   │   ├── templates/   # Email templates
+│   │   │   └── workers/     # BullMQ job workers
+│   │   └── package.json
+│   └── web/                 # Frontend React application
+│       ├── src/
+│       │   ├── api/         # API client & React Query
+│       │   ├── components/  # React components (UI, views, icons)
+│       │   ├── hooks/       # Custom React hooks
+│       │   ├── lib/         # Utilities
+│       │   ├── routes/      # TanStack Router routes
+│       │   ├── services/    # API services
+│       │   └── stores/      # Zustand stores
+│       └── package.json
+├── packages/
+│   ├── database/           # Prisma ORM & PostgreSQL
+│   │   └── prisma/         # Schema & migrations
+│   ├── constants/          # Shared constants
+│   ├── schemas/            # Shared Zod schemas
+│   ├── types/              # Shared TypeScript types
+│   └── sentry-logger/      # Sentry error logging
+├── scripts/                # Utility scripts
+└── package.json
+```
 
-### Backend
-
-- Node.js
-- Express
-- TypeScript
-- OpenAI API
-- Passport.js
-- Prisma ORM
-- PostgreSQL
-- Redis
-- BullMQ
-- Resend
-- Multer
-- Sentry
-
-### Monorepo
-
-- pnpm workspaces
-- Shared packages for types, schemas, database, constants, and Sentry logging
-
-## Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-- **Node.js** (v24 or higher)
-- **pnpm** (v10 or higher)
-- **PostgreSQL** database
-- **Redis** instance (local or managed, e.g. Upstash)
-- **OpenAI API Key** - Get one from [OpenAI Platform](https://platform.openai.com/)
-- **Resend API Key** - For email verification
+---
 
 ## Getting Started
+
+**Quick start** (install dependencies, build packages, generate Prisma client):
+
+```bash
+pnpm dev:setup
+```
 
 ### 1. Clone the Repository
 
@@ -313,12 +425,6 @@ The application will be available at:
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8080
 
-Optional quick setup (install dependencies, build packages and generate Prisma client):
-
-```bash
-pnpm dev:setup
-```
-
 ### 5. Database Setup
 
 Run database migrations:
@@ -339,85 +445,7 @@ pnpm db:generate
 pnpm build
 ```
 
-## Architecture & Technology Decisions
-
-Key decisions made during development and the reasoning behind them:
-
-### pnpm Monorepo with Shared Packages
-
-A single pnpm workspace hosts both apps (`api`, `web`) and five shared packages (`database`, `types`, `schemas`, `constants`, `sentry-logger`). This lets the Zod schemas that validate API request bodies be reused directly in the React forms — a single source of truth that eliminates drift between frontend validation and backend enforcement. The `pnpm catalogs` feature pins shared dependency versions (Zod, Stripe, TypeScript, etc.) across all packages without duplicating version strings.
-
-### TanStack Router over React Router
-
-TanStack Router provides file-based routing with full TypeScript inference for route params and search params. This avoids runtime `useParams()` / `useSearchParams()` casts and makes navigation type-safe end-to-end. The generated route tree is committed, so route changes are caught at compile time rather than at runtime.
-
-### Tiered AI Models (gpt-4.1-nano / o3)
-
-Free and signed-in analyses use `gpt-4.1-nano` (fast, low-cost). Premium analyses use `o3` (reasoning model, higher accuracy). The tier is determined server-side after verifying the subscription, so the model choice cannot be spoofed by the client.
-
-### OpenAI Responses API
-
-The backend uses the OpenAI **Responses API** (`openAiClient.responses.create`) rather than the legacy Chat Completions API. The Responses API returns a stable `id` alongside the output text, which is stored and used as the analysis record's primary key — enabling idempotent webhook re-delivery without duplicating records.
-
-### Async Analysis via BullMQ
-
-AI analysis runs inside a BullMQ worker rather than inline in the HTTP request handler. The API creates an `AnalysisJob` record in PostgreSQL, enqueues the job to Redis, and immediately returns `202 Accepted` with a `jobId`. The worker processes the job independently — calling OpenAI, saving the `RequestLog`, caching the result in Redis, and updating the job status. The client polls `GET /analyze/job/:jobId` until the job is `COMPLETED` or `FAILED`. This keeps request latency predictable, prevents HTTP timeouts on slow AI responses, and decouples the web tier from the processing tier.
-
-### Vitest for Testing
-
-Vitest is ESM-native and shares configuration with the existing Vite/tsup build toolchain, eliminating the CJS/ESM transform issues that arise when using Jest with this stack. A single test runner covers both the Node.js API (`environment: 'node'`) and the React frontend (`environment: 'jsdom'`).
-
-### Express 5
-
-Express 5 is used for the API server. Compared to Express 4, async route handlers propagate thrown errors to the error middleware automatically — no need for `try/catch` wrappers or `next(err)` calls in every handler.
-
-### Sentry for Error Tracking
-
-Sentry is used instead of plain `console.error` or Pino for production error tracking. Unlike a file logger, Sentry captures full stack traces, request context, and user metadata, then surfaces them in a searchable dashboard — making it practical to detect and triage production errors without digging through log files. The integration lives in the `sentry-logger` shared package so both the API and any future service share a single, consistently-configured client.
-
-### In-Memory Access Token Storage
-
-The JWT access token is stored in a module-level JavaScript variable (`tokenStorage.ts`) rather than `localStorage`. This eliminates XSS exposure: scripts injected on any page of the domain cannot read the token. Sessions survive tab navigation because the token lives in the JS heap. Page refresh re-hydrates the token silently via the `httpOnly` refresh token cookie (`POST /auth/refresh`), which is inaccessible to JavaScript.
-
 ---
-
-## Project Structure
-
-```
-ats-resume-analyzer/
-├── apps/
-│   ├── api/                 # Backend Express server
-│   │   ├── src/
-│   │   │   ├── config/      # Configuration (CORS, Passport, Pino, etc.)
-│   │   │   ├── controllers/ # Request handlers
-│   │   │   ├── lib/         # Utilities and helpers
-│   │   │   ├── middleware/  # Express middleware (auth, rate limit, validation)
-│   │   │   ├── prompt/      # AI prompts (standard & pro)
-│   │   │   ├── routes/      # API routes
-│   │   │   ├── services/    # Business logic (auth, email, analysis)
-│   │   │   ├── templates/   # Email templates
-│   │   │   └── workers/     # BullMQ job workers
-│   │   └── package.json
-│   └── web/                 # Frontend React application
-│       ├── src/
-│       │   ├── api/         # API client & React Query
-│       │   ├── components/  # React components (UI, views, icons)
-│       │   ├── hooks/       # Custom React hooks
-│       │   ├── lib/         # Utilities
-│       │   ├── routes/      # TanStack Router routes
-│       │   ├── services/    # API services
-│       │   └── stores/      # Zustand stores
-│       └── package.json
-├── packages/
-│   ├── database/           # Prisma ORM & PostgreSQL
-│   │   └── prisma/         # Schema & migrations
-│   ├── constants/          # Shared constants
-│   ├── schemas/            # Shared Zod schemas
-│   ├── types/              # Shared TypeScript types
-│   └── sentry-logger/      # Sentry error logging
-├── scripts/                # Utility scripts
-└── package.json
-```
 
 ## Available Scripts
 
@@ -464,6 +492,8 @@ ats-resume-analyzer/
 - `pnpm prettier` - Format code with Prettier
 - `pnpm gen-envs` - Generate TypeScript types from environment variables
 - `pnpm clear` - Remove all build artifacts and dist folders
+
+---
 
 ## API Endpoints
 
@@ -567,54 +597,6 @@ Keep-alive ping for the API server (e.g. to prevent Render cold starts). Require
 - `POST /api/checkout/cancel-subscription`
 - `POST /api/checkout/restore-subscription`
 
-## How It Works
-
-1. **Upload**: User uploads a PDF resume through the web interface
-2. **Parse**: The PDF is parsed to extract text content
-3. **Enqueue**: An `AnalysisJob` record is created in PostgreSQL and the job is pushed to a BullMQ queue backed by Redis. The API immediately returns `202 Accepted` with a `jobId`
-4. **Process**: A BullMQ worker picks up the job, calls the OpenAI Responses API (model depends on user tier), saves a `RequestLog` to PostgreSQL, and stores the result in Redis
-5. **Poll**: The client polls `GET /analyze/job/:jobId` until status is `COMPLETED` (or `FAILED`)
-6. **Report**: User receives a detailed report with:
-   - ATS compatibility score
-   - Strengths and weaknesses
-   - Actionable recommendations
-   - Keyword optimization suggestions
-
-## Development Story
-
-### The Problem
-
-Applicant Tracking Systems are opaque by design — candidates submit resumes and receive no feedback on why they were filtered out. This project was built to give candidates visibility into how ATS algorithms interpret their resume and actionable steps to improve their chances before applying.
-
-### Core Decisions
-
-**Tiered AI models** — Free and signed-in analyses use `gpt-4.1-nano` (fast, low-cost). Premium analyses use `o3` (OpenAI's reasoning model, higher accuracy). The tier is resolved server-side after verifying the Stripe subscription, so the model choice cannot be spoofed by the client.
-
-**Monorepo shared schemas** — A single `@monorepo/schemas` package containing Zod schemas is imported by both the React frontend (form validation) and the Express backend (request validation middleware). This eliminates the class of bugs where frontend and backend silently diverge on what a valid request looks like.
-
-**In-memory JWT storage** — The access token lives in a module-level JavaScript variable rather than `localStorage`. Any XSS payload can read `localStorage`, but it cannot reach a plain JS variable in another module. Page refreshes re-hydrate the token silently via the `httpOnly` refresh-token cookie (`POST /auth/refresh`), which is inaccessible to JavaScript entirely.
-
-**OpenAI Responses API with idempotent storage** — The Responses API returns a stable `id` alongside the output text. This ID is stored as the analysis record's primary key, so webhook re-delivery or duplicate client requests cannot create duplicate records.
-
-**Cursor-based pagination** — The analysis history endpoint uses cursor pagination (`analyseId` as the cursor, ordered by `createdAt desc`) rather than offset pagination. Offset pagination becomes slow at large offsets and returns inconsistent results when new items are inserted between pages. The cursor approach stays O(log n) and stable regardless of concurrent writes.
-
-**Services layer** — Business logic (DB queries, Stripe calls, OpenAI lookups) lives in `services/`, while controllers only parse requests and send responses. This separation makes the business logic unit-testable without spinning up Express.
-
-### Challenges
-
-**Async job result delivery** — The BullMQ worker caches the completed analysis in Redis under `result:<jobId>`. The first successful `GET /analyze/job/:jobId` response deletes the key, so the result is consumed exactly once. If the client never reads it (e.g., tab closed), the key expires via Redis TTL and the full analysis remains accessible via `GET /analysis/:id` using the stable OpenAI response id stored in PostgreSQL.
-
-**Stripe webhook idempotency** — Stripe can deliver the same webhook event more than once. The `handleCheckoutSessionCompleted` handler is safe to re-run: it checks whether the subscription is already active before writing to the database, preventing duplicate premium grants on re-delivery.
-
-**XSS-safe token storage** — Storing the JWT in a JS module variable (rather than `localStorage` or a non-`httpOnly` cookie) required building a silent refresh mechanism. On every page load, the React app calls `POST /auth/refresh` using the `httpOnly` cookie; if the cookie is valid the server returns a fresh access token and the user session is restored seamlessly.
-
-**ESM/CJS in the monorepo** — The shared packages are built to both ESM and CJS targets via `tsup`. Without this, the Node.js API (CJS at runtime) and the Vite-built frontend (ESM) would fail to resolve the same package. `pnpm catalogs` pins the exact version of each shared dependency across all workspaces without duplicating version strings.
-
-### What Would Change at Scale
-
-- **Read replicas** — The analysis history query runs against the primary database. Under high read volume, a read replica would offload these queries and keep write latency predictable.
-- **Persistent file storage** — Uploaded PDFs are currently parsed in memory and discarded. Persisting them to object storage (e.g., S3) would enable re-analysis without re-upload and support future features like diff comparison between resume versions.
-
 ---
 
 ## Troubleshooting
@@ -660,14 +642,8 @@ FRONTEND_URL=http://localhost:5173
 
 - Remember to regenerate the types after each change using the `pnpm gen-envs` command from the root directory.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
 
 ## License
 
 ISC
-
-## Support
-
-For issues and questions, please open an issue in the repository.
