@@ -19,7 +19,10 @@ export const handleCheckoutSessionCompleted = async (
   }
 
   const userId = session.metadata.userId
-  const subscriptionId = session.subscription as string
+  const subscriptionId =
+    typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription?.id
 
   if (!subscriptionId) {
     logger.error('Missing subscription ID in checkout session')

@@ -1,3 +1,4 @@
+import { getToken } from '@/api/tokenStorage'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { getCurrentUserService } from '@/services/authService'
 import { QueryClient } from '@tanstack/react-query'
@@ -8,6 +9,10 @@ export async function sessionGuard({
 }: {
   queryClient: QueryClient
 }) {
+  if (!getToken()) {
+    throw redirect({ to: '/login' })
+  }
+
   const response = await queryClient.ensureQueryData({
     queryKey: QUERY_KEYS.session.currentUser,
     queryFn: getCurrentUserService

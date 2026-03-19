@@ -1,6 +1,5 @@
 import { buttonVariants } from '@/components/ui/button'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { checkoutSessionGuard } from '@/guards/checkoutSessionGuard'
 import { useVerifyStripeSession } from '@/hooks/checkout/useVerifyStripeSession'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { cn } from '@/lib/utils'
@@ -12,7 +11,6 @@ import { useEffect } from 'react'
 
 export const Route = createFileRoute('/(app)/checkout/success/')({
   validateSearch: CheckoutSessionIdSchema,
-  beforeLoad: async ({ search }) => await checkoutSessionGuard(search.id),
   component: SuccessPage,
   head: () => ({
     meta: [
