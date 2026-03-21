@@ -1,8 +1,10 @@
 import { useRateLimit } from '@/hooks/useRateLimit'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { FREE_REQUESTS_PER_DAY } from '@monorepo/constants'
+import { useTranslation } from 'react-i18next'
 
 export function RequestsLeft() {
+  const { t } = useTranslation('resumeAnalyzer')
   const { requestsLeft } = useRateLimit()
   const { isPremium, isLoading } = useSessionStore()
 
@@ -13,10 +15,9 @@ export function RequestsLeft() {
   if (requestsLeft !== 0) {
     return (
       <p className="text-center">
-        Requests left:{' '}
-        <span className="font-medium">
-          {requestsLeft ?? FREE_REQUESTS_PER_DAY}
-        </span>
+        {t('requestsLeft', {
+          count: requestsLeft ?? FREE_REQUESTS_PER_DAY
+        })}
       </p>
     )
   }

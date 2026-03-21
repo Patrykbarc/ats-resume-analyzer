@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useSearch } from '@tanstack/react-router'
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export const Route = createFileRoute('/(app)/checkout/success/')({
   validateSearch: CheckoutSessionIdSchema,
@@ -22,6 +23,7 @@ export const Route = createFileRoute('/(app)/checkout/success/')({
 })
 
 function SuccessPage() {
+  const { t } = useTranslation('checkout')
   const queryClient = useQueryClient()
   const { id } = useSearch({ from: '/(app)/checkout/success/' })
   const { data, isLoading, isError } = useVerifyStripeSession(id)
@@ -41,10 +43,8 @@ function SuccessPage() {
     return (
       <div className="text-center p-8">
         <Loader2 className="size-10 text-primary animate-spin mx-auto mb-4" />
-        <h1 className="text-xl">Verifying payment...</h1>
-        <p className="text-muted-foreground">
-          Please wait while we update your account.
-        </p>
+        <h1 className="text-xl">{t('success.verifying.title')}</h1>
+        <p className="text-muted-foreground">{t('success.verifying.description')}</p>
       </div>
     )
   }
@@ -52,8 +52,8 @@ function SuccessPage() {
   if (isError) {
     return (
       <Cancelled
-        title="Verification Error"
-        message="We couldn't confirm your payment. Please contact support if funds were deducted."
+        title={t('success.error.title')}
+        message={t('success.error.message')}
       />
     )
   }
@@ -64,25 +64,24 @@ function SuccessPage() {
         <CheckCircle2 className="size-10 text-green-800" aria-hidden="true" />
       </div>
       <h1 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-        Payment Successful!
+        {t('success.title')}
       </h1>
       <p className="text-lg text-muted-foreground text-pretty">
-        Thank you for your purchase. Your order has been confirmed and you now
-        have access to premium features.
+        {t('success.description')}
       </p>
       <Link
         to="/"
         className={cn(buttonVariants({ variant: 'link' }), 'mt-4 text-lg')}
       >
-        Return to home
+        {t('success.returnHome')}
       </Link>
     </div>
   )
 }
 
 function Cancelled({
-  title = 'Order Cancelled',
-  message = 'Your payment was not completed. No charges have been made to your account.'
+  title,
+  message
 }: {
   title?: string
   message?: string

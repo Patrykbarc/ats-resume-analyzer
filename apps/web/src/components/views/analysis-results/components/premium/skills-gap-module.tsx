@@ -1,4 +1,5 @@
 import type { PremiumModules } from '@monorepo/types'
+import { useTranslation } from 'react-i18next'
 
 import { ListBlock } from './list-block'
 import { PremiumCard } from './premium-card'
@@ -8,17 +9,24 @@ type SkillsGapModuleProps = {
 }
 
 export function SkillsGapModule({ data }: SkillsGapModuleProps) {
+  const { t } = useTranslation('analysis')
   const { gaps, learning_plan, certifications } = data
 
   return (
     <PremiumCard
-      title="Skills Gap Analysis"
-      description="Capabilities to build plus a focused learning path."
+      title={t('premium.skillsGap.title')}
+      description={t('premium.skillsGap.description')}
     >
       <div className="grid gap-4 md:grid-cols-3">
-        <ListBlock title="Gaps" items={gaps} />
-        <ListBlock title="Learning plan" items={learning_plan} />
-        <ListBlock title="Certifications" items={certifications} />
+        <ListBlock title={t('premium.skillsGap.gaps')} items={gaps} />
+        <ListBlock
+          title={t('premium.skillsGap.learningPlan')}
+          items={learning_plan}
+        />
+        <ListBlock
+          title={t('premium.skillsGap.certifications')}
+          items={certifications}
+        />
       </div>
     </PremiumCard>
   )

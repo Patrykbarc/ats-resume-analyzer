@@ -1,0 +1,24 @@
+{
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "Sorry, the page you're looking for doesn't exist."
+  },
+  "errorFallback": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Please try again."
+  },
+  "rateLimit": {
+    "title": "Rate Limit Exceeded",
+    "renewsAt": "The limit will be renewed at {{date}}.",
+    "upgrade": "Upgrade your plan for unlimited analyses"
+  },
+  "verify": {
+    "ok": "Your account has been verified. You can now log in.",
+    "gone": "Your verification link has expired.",
+    "notFound": "The verification link is invalid or has already been used.",
+    "unknown": "An unknown error occurred during verification. Please try again later.",
+    "goToLogin": "Go to login page",
+    "requestNew": "Request a new one.",
+    "returnHome": "Return home"
+  }
+}

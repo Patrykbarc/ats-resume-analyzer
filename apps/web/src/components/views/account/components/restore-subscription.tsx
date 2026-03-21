@@ -17,6 +17,7 @@ import { User } from '@monorepo/database'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 export function RestoreSubscription({
   id,
@@ -25,6 +26,7 @@ export function RestoreSubscription({
   id: User['id']
   className?: string
 }) {
+  const { t } = useTranslation('account')
   const queryClient = useQueryClient()
 
   const { isPending, mutate } = useRestoreSubscription({
@@ -37,7 +39,7 @@ export function RestoreSubscription({
       })
     },
     onError: () => {
-      toast.error('Failed to restore subscription. Please try again.')
+      toast.error(t('subscription.restore.errorToast'))
     }
   })
 
@@ -50,32 +52,32 @@ export function RestoreSubscription({
           className="w-fit md:ml-auto"
           disabled={isPending}
         >
-          Restore subscription
+          {t('subscription.restore.button')}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="size-5 text-destructive" />
-            <AlertDialogTitle>Restore subscription</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('subscription.restore.title')}
+            </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="space-y-2">
-            <span>
-              Are you sure you want to restore your Premium subscription?
-            </span>
+            <span>{t('subscription.restore.confirm')}</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
             className={cn(buttonVariants({ variant: 'secondary' }))}
           >
-            Cancel
+            {t('subscription.restore.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             className={cn(buttonVariants({ variant: 'default' }))}
             onClick={() => mutate({ id })}
           >
-            Yes, restore
+            {t('subscription.restore.yes')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

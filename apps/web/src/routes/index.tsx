@@ -8,6 +8,7 @@ import { buildPageTitle } from '@/lib/buildPageTitle'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const LatestsAnalysisHistory = lazy(() =>
   import(
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/')({
 })
 
 function RouteComponent() {
+  const { t } = useTranslation('seo')
   const { user } = useSessionStore()
   const { data: history } = useGetAnalysisHistory({
     id: user?.id ?? '',
@@ -38,11 +40,10 @@ function RouteComponent() {
     <div className="space-y-12 md:space-y-24">
       <header className="mb-12 text-center">
         <h1 className="mb-4 mt-8 text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl text-balance">
-          AI-Powered Resume Analyzer
+          {t('home.title')}
         </h1>
         <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl text-pretty leading-relaxed">
-          Get instant AI-powered insights to improve your resume and land more
-          interviews
+          {t('home.subtitle')}
         </p>
       </header>
 

@@ -16,30 +16,32 @@ import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { AuthErrorMessages } from './components/auth-error-messages'
 import { AuthFormFields } from './types/types'
 
-const FORM_FIELDS: AuthFormFields<LoginUserSchemaType>[] = [
-  {
-    fieldName: 'email',
-    label: 'Email address',
-    placeholder: 'you@example.com',
-    type: 'email'
-  },
-  {
-    fieldName: 'password',
-    label: 'Password',
-    placeholder: '******',
-    type: 'password'
-  }
-]
-
 export function LoginForm() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const { redirect } = useSearch({ from: '/_auth/login/' })
   const queryClient = useQueryClient()
   const { setAuthToken, setUser, setIsUserLoggedIn, setIsPremium } =
     useSessionStore()
+
+  const FORM_FIELDS: AuthFormFields<LoginUserSchemaType>[] = [
+    {
+      fieldName: 'email',
+      label: t('fields.email'),
+      placeholder: t('fields.emailPlaceholder'),
+      type: 'email'
+    },
+    {
+      fieldName: 'password',
+      label: t('fields.password'),
+      placeholder: t('fields.passwordPlaceholder'),
+      type: 'password'
+    }
+  ]
 
   const { mutate, isPending, isSuccess, error } = useLoginMutation({
     onSuccess: async (response) => {
@@ -57,7 +59,7 @@ export function LoginForm() {
         setIsPremium(userData.isPremium)
       }
 
-      toast.success('Logged in successfully!')
+      toast.success(t('login.successToast'))
       navigate({ to: redirect ?? '/' })
     },
     onError: (err) => {
@@ -123,11 +125,11 @@ export function LoginForm() {
 
       <div className="flex justify-between items-center">
         <Button type="submit" disabled={isPending}>
-          Login
+          {t('login.submit')}
         </Button>
 
         <Link to="/forgot-password" className="text-sm underline">
-          Forgot your password?
+          {t('login.forgotPassword')}
         </Link>
       </div>
 

@@ -17,6 +17,7 @@ import { sentryLogger } from '@monorepo/sentry-logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { UserBillingInformation } from '../types/types'
 
 export function CancelSubscription({
@@ -24,6 +25,7 @@ export function CancelSubscription({
   nextBillingDate,
   className
 }: UserBillingInformation) {
+  const { t } = useTranslation('account')
   const queryClient = useQueryClient()
 
   const { isPending, mutate } = useCancelSubscription({
@@ -36,7 +38,7 @@ export function CancelSubscription({
       })
     },
     onError: (err) => {
-      toast.error('Failed to cancel subscription. Please try again.')
+      toast.error(t('subscription.cancel.errorToast'))
       sentryLogger.unexpected(err)
     }
   })
@@ -50,22 +52,22 @@ export function CancelSubscription({
           className="w-fit md:ml-auto"
           disabled={isPending}
         >
-          Cancel subscription
+          {t('subscription.cancel.button')}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="size-5 text-destructive" />
-            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+            <AlertDialogTitle>{t('subscription.cancel.title')}</AlertDialogTitle>
           </div>
           <AlertDialogDescription className="space-y-2">
             <span>
-              Are you sure you want to cancel your Premium subscription?
+              {t('subscription.cancel.confirm')}
               <br />
             </span>
             <span className="text-sm text-muted-foreground mt-2">
-              Your subscription will remain active until {nextBillingDate}.
+              {t('subscription.cancel.activeUntil', { date: nextBillingDate })}
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -76,13 +78,13 @@ export function CancelSubscription({
               'hover:text-white'
             )}
           >
-            Keep subscription
+            {t('subscription.cancel.keep')}
           </AlertDialogCancel>
           <AlertDialogAction
             className={buttonVariants({ variant: 'secondary' })}
             onClick={() => mutate({ id })}
           >
-            Yes, cancel
+            {t('subscription.cancel.yes')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

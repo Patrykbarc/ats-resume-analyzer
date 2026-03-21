@@ -1,4 +1,5 @@
 import type { PremiumModules } from '@monorepo/types'
+import { useTranslation } from 'react-i18next'
 
 import { ListBlock } from './list-block'
 import { PremiumCard } from './premium-card'
@@ -8,21 +9,28 @@ type ContentStructureModuleProps = {
 }
 
 export function ContentStructureModule({ data }: ContentStructureModuleProps) {
+  const { t } = useTranslation('analysis')
   const { format_issues, structure_recommendations, content_gaps } = data
 
   return (
     <PremiumCard
-      title="Content & Structure"
-      description="Layout, ordering, and content fixes to keep ATS parsers happy."
+      title={t('premium.contentStructure.title')}
+      description={t('premium.contentStructure.description')}
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <ListBlock title="Format issues" items={format_issues} />
         <ListBlock
-          title="Structure recommendations"
+          title={t('premium.contentStructure.formatIssues')}
+          items={format_issues}
+        />
+        <ListBlock
+          title={t('premium.contentStructure.structureRecommendations')}
           items={structure_recommendations}
         />
       </div>
-      <ListBlock title="Content gaps" items={content_gaps} />
+      <ListBlock
+        title={t('premium.contentStructure.contentGaps')}
+        items={content_gaps}
+      />
     </PremiumCard>
   )
 }

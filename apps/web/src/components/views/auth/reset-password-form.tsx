@@ -11,31 +11,33 @@ import { ResetPasswordSchema, ResetPasswordSchemaType } from '@monorepo/schemas'
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AuthErrorMessages } from './components/auth-error-messages'
 import { FieldSuccess } from './components/field-success'
 import { AuthFormFields } from './types/types'
 
-const FORM_FIELDS: AuthFormFields<ResetPasswordSchemaType>[] = [
-  {
-    fieldName: 'password',
-    label: 'Password',
-    placeholder: '******',
-    type: 'password'
-  },
-  {
-    fieldName: 'confirmPassword',
-    label: 'Confirm passsword',
-    placeholder: '******',
-    type: 'password'
-  }
-]
-
 export function ResetPasswordForm({ token }: { token: string }) {
+  const { t } = useTranslation('auth')
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  const FORM_FIELDS: AuthFormFields<ResetPasswordSchemaType>[] = [
+    {
+      fieldName: 'password',
+      label: t('fields.password'),
+      placeholder: t('fields.passwordPlaceholder'),
+      type: 'password'
+    },
+    {
+      fieldName: 'confirmPassword',
+      label: t('fields.confirmPassword'),
+      placeholder: t('fields.passwordPlaceholder'),
+      type: 'password'
+    }
+  ]
 
   const { mutate, isPending, isSuccess, error } = useResetPassword({
     onSuccess: () => {
-      setSuccessMessage('Your password has been successfully changed.')
+      setSuccessMessage(t('resetPassword.successMessage'))
     },
     onError: (err) => {
       sentryLogger.unexpected(err)
@@ -100,7 +102,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       </FieldGroup>
 
       <Button type="submit" disabled={isPending}>
-        Reset password
+        {t('resetPassword.submit')}
       </Button>
 
       {successMessage && <FieldSuccess message={successMessage} />}

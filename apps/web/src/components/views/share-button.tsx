@@ -2,6 +2,7 @@ import { getEnvs } from '@/lib/getEnv'
 import { Check, Copy, Share } from 'lucide-react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
 import {
   DropdownMenu,
@@ -10,11 +11,8 @@ import {
   DropdownMenuTrigger
 } from '../ui/dropdown-menu'
 
-const TITLE = 'Stop letting ATS systems reject your resume!'
-const TEXT =
-  'I used this amazing tool to check my CV and maximize my chances of getting noticed. Try it now!'
-
 export function ShareButton({ id }: { id: string }) {
+  const { t } = useTranslation('analysis')
   const [copied, setCopied] = useState(false)
 
   const url = `${getEnvs().VITE_FRONTEND_URL}/analyse/${id}`
@@ -24,10 +22,10 @@ export function ShareButton({ id }: { id: string }) {
       await navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      toast.success('Copied to clipboard')
+      toast.success(t('share.copiedToast'))
     } catch (err) {
       console.error(err)
-      toast.error('Failed to copy')
+      toast.error(t('share.failedToast'))
     }
   }
 
@@ -36,7 +34,7 @@ export function ShareButton({ id }: { id: string }) {
       name: 'Twitter',
       icon: '𝕏',
       action: () => {
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(TEXT)}&url=${encodeURIComponent(url)}`
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(t('share.shareText'))}&url=${encodeURIComponent(url)}`
         window.open(twitterUrl, '_blank')
       }
     },
@@ -44,7 +42,7 @@ export function ShareButton({ id }: { id: string }) {
       name: 'Email',
       icon: '✉',
       action: () => {
-        const mailtoUrl = `mailto:?subject=${encodeURIComponent(TITLE)}&body=${encodeURIComponent(`${TEXT}\n\n${url}`)}`
+        const mailtoUrl = `mailto:?subject=${encodeURIComponent(t('share.shareTitle'))}&body=${encodeURIComponent(`${t('share.shareText')}\n\n${url}`)}`
         window.location.href = mailtoUrl
       }
     }
@@ -55,13 +53,13 @@ export function ShareButton({ id }: { id: string }) {
       <DropdownMenuTrigger asChild>
         <Button variant="default" size="lg">
           <Share className="size-4" />
-          Share
+          {t('share.button')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <div className="px-2 py-1.5">
           <p className="text-xs font-semibold text-muted-foreground mb-2">
-            Share on
+            {t('share.shareOn')}
           </p>
         </div>
 
@@ -84,12 +82,12 @@ export function ShareButton({ id }: { id: string }) {
           {copied ? (
             <>
               <Check className="w-4 h-4 mr-2" />
-              <span>Copied!</span>
+              <span>{t('share.copied')}</span>
             </>
           ) : (
             <>
               <Copy className="w-4 h-4 mr-2" />
-              <span>Copy link</span>
+              <span>{t('share.copyLink')}</span>
             </>
           )}
         </DropdownMenuItem>

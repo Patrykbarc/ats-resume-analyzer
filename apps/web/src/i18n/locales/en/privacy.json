@@ -1,0 +1,177 @@
+{
+  "header": {
+    "title": "Privacy Policy",
+    "toc": "Table of Contents"
+  },
+  "sections": {
+    "dataCollection": {
+      "title": "1. Information We Collect",
+      "personalInfo": {
+        "title": "Personal Information",
+        "intro": "We collect information that you provide directly to us, including:",
+        "items": [
+          "Account information (name, email address, password)",
+          "Resume content and files you upload for analysis",
+          "Payment information (processed securely by third-party payment processors)",
+          "Communication preferences and correspondence with us"
+        ]
+      },
+      "autoCollected": {
+        "title": "Automatically Collected Information",
+        "intro": "When you use our service, we automatically collect certain information, including:",
+        "items": [
+          "Device information (IP address, browser type, operating system)",
+          "Usage data (pages visited, features used, time spent on site)",
+          "Analytics data to improve our service",
+          "Cookies and similar tracking technologies"
+        ]
+      }
+    },
+    "dataUsage": {
+      "title": "2. How We Use Your Information",
+      "intro": "We use the information we collect to:",
+      "items": [
+        "Provide, maintain, and improve our resume analysis service",
+        "Process your resume files and deliver AI-powered analysis results",
+        "Create and manage your user account",
+        "Process payments and prevent fraud",
+        "Send you service updates, security alerts, and administrative messages",
+        "Respond to your comments, questions, and customer service requests",
+        "Analyze usage patterns to improve user experience",
+        "Comply with legal obligations and enforce our terms of service"
+      ]
+    },
+    "dataSharing": {
+      "title": "3. Sharing Your Information",
+      "intro": "We do not sell your personal information. We may share your information in the following situations:",
+      "items": [
+        {
+          "label": "Service Providers",
+          "description": "With third-party vendors who perform services on our behalf (cloud hosting, payment processing, analytics)"
+        },
+        {
+          "label": "Legal Requirements",
+          "description": "When required by law or to protect our rights and safety"
+        },
+        {
+          "label": "Business Transfers",
+          "description": "In connection with a merger, acquisition, or sale of assets"
+        },
+        {
+          "label": "With Your Consent",
+          "description": "When you explicitly authorize us to share specific information"
+        }
+      ],
+      "footer": "All third-party service providers are contractually obligated to maintain the confidentiality and security of your information."
+    },
+    "dataSecurity": {
+      "title": "4. Data Security",
+      "intro": "We implement appropriate technical and organizational security measures to protect your personal information, including:",
+      "items": [
+        "Encryption of data in transit (TLS/SSL) and at rest",
+        "Regular security audits and vulnerability assessments",
+        "Access controls and authentication mechanisms",
+        "Secure backup and disaster recovery procedures",
+        "Employee training on data protection and privacy"
+      ],
+      "footer": "However, no method of transmission over the Internet or electronic storage is 100% secure. While we strive to protect your personal information, we cannot guarantee absolute security."
+    },
+    "cookies": {
+      "title": "5. Cookies and Tracking Technologies",
+      "intro": "We use cookies and similar tracking technologies to:",
+      "items": [
+        "Maintain your login session and preferences",
+        "Understand how you use our service",
+        "Improve site performance and user experience",
+        "Deliver relevant content and advertisements"
+      ],
+      "types": {
+        "title": "Types of Cookies We Use",
+        "items": [
+          {
+            "label": "Essential Cookies",
+            "description": "Required for basic site functionality"
+          },
+          {
+            "label": "Performance Cookies",
+            "description": "Help us understand how visitors interact with our site"
+          },
+          {
+            "label": "Functional Cookies",
+            "description": "Remember your preferences and settings"
+          },
+          {
+            "label": "Analytics Cookies",
+            "description": "Collect information about site usage patterns"
+          }
+        ]
+      },
+      "footer": "You can control cookies through your browser settings. However, disabling cookies may limit your ability to use certain features of our service."
+    },
+    "userRights": {
+      "title": "6. Your Privacy Rights",
+      "intro": "Depending on your location, you may have the following rights regarding your personal information:",
+      "items": [
+        {
+          "label": "Access",
+          "description": "Request a copy of the personal information we hold about you"
+        },
+        {
+          "label": "Correction",
+          "description": "Request correction of inaccurate or incomplete information"
+        },
+        {
+          "label": "Deletion",
+          "description": "Request deletion of your personal information"
+        },
+        {
+          "label": "Portability",
+          "description": "Request transfer of your data to another service"
+        },
+        {
+          "label": "Objection",
+          "description": "Object to processing of your personal information"
+        },
+        {
+          "label": "Restriction",
+          "description": "Request restriction of processing in certain circumstances"
+        },
+        {
+          "label": "Withdraw Consent",
+          "description": "Withdraw consent for data processing where consent was the basis"
+        }
+      ],
+      "footerPrefix": "To exercise these rights, please contact us at",
+      "footerSuffix": ". We will respond to your request within 30 days."
+    },
+    "dataRetention": {
+      "title": "7. Data Retention",
+      "intro": "We retain your personal information for as long as necessary to:",
+      "items": [
+        "Provide you with our services",
+        "Comply with legal obligations",
+        "Resolve disputes and enforce our agreements"
+      ],
+      "footer": "When you delete your account, we will delete or anonymize your personal information within 90 days, except where we are required by law to retain certain information for longer periods."
+    },
+    "children": {
+      "title": "8. Children's Privacy",
+      "content": "Our service is not intended for children under 16 years of age. We do not knowingly collect personal information from children under 16. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately."
+    },
+    "changes": {
+      "title": "9. Changes to This Privacy Policy",
+      "intro": "We may update this Privacy Policy from time to time. When we make changes, we will revise the \"Last updated\" date at the top of this policy. We will notify you of any material changes by:",
+      "items": [
+        "Posting a notice on our website",
+        "Sending you an email notification",
+        "Displaying a prominent notice within our service"
+      ],
+      "footer": "We encourage you to review this Privacy Policy periodically to stay informed about how we protect your information."
+    },
+    "contact": {
+      "title": "10. Contact Us",
+      "intro": "If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:",
+      "emailLabel": "Email:"
+    }
+  }
+}

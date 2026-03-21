@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { FileSearchIcon, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 type AnalyseFileProps = {
   file: File
@@ -16,6 +17,7 @@ export function AnalyzeFile({
   analyzing,
   handlers: { handleReset, handleAnalyse }
 }: AnalyseFileProps) {
+  const { t } = useTranslation('resumeAnalyzer')
   const { isPremium } = useSessionStore()
 
   return (
@@ -42,18 +44,22 @@ export function AnalyzeFile({
           {analyzing ? (
             <>
               <Sparkles className="mr-2 size-4 animate-spin" />
-              <p>Analyzing...</p>
+              <p>{t('analyze.analyzing')}</p>
             </>
           ) : (
             <>
               <Sparkles className="mr-2 size-4" />
-              {isPremium ? <p>Pro Analyze</p> : <p>Analyze</p>}
+              {isPremium ? (
+                <p>{t('analyze.proAnalyze')}</p>
+              ) : (
+                <p>{t('analyze.analyze')}</p>
+              )}
             </>
           )}
         </Button>
 
         <Button onClick={handleReset} variant="outline">
-          Cancel
+          {t('analyze.cancel')}
         </Button>
       </div>
     </>

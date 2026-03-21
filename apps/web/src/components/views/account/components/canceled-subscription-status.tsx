@@ -1,6 +1,7 @@
 import { CardContainer } from '@/components/ui/card'
 import { useLoaderData } from '@tanstack/react-router'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { NextBillingDate } from '../types/types'
 import { RestoreSubscription } from './restore-subscription'
 
@@ -9,6 +10,7 @@ export function CanceledSubscriptionStatus({
 }: {
   nextBillingDate: NextBillingDate
 }) {
+  const { t } = useTranslation('account')
   const data = useLoaderData({ from: '/(app)/account/' })
 
   if (!data) {
@@ -20,18 +22,14 @@ export function CanceledSubscriptionStatus({
       <AlertTriangle className="size-5 text-destructive mt-0.5 hrink-0" />
       <div>
         <p className="text-sm font-medium text-destructive">
-          Subscription Cancelled
+          {t('subscription.canceled.title')}
         </p>
         <p className="text-sm text-muted-foreground mt-1">
           <span>
-            Your subscription has been cancelled and will expire on{' '}
-            <span className="font-semibold">{nextBillingDate}</span>. After
-            that, you&apos;ll be switched to the Basic plan.
+            {t('subscription.canceled.expiry', { date: nextBillingDate })}
           </span>
           <br />
-          <span>
-            You can restore your subscription at any time before it expires.
-          </span>
+          <span>{t('subscription.canceled.canRestore')}</span>
         </p>
 
         <RestoreSubscription id={data.id} className="mt-4" />

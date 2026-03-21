@@ -6,18 +6,20 @@ import { formatHistoryDate } from '@/lib/formatHistoryDate'
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { Clock, FileText } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 type AnalysisHistoryProps = {
   history: AnalysisHistoryResponse
 }
 
 export function LatestsAnalysisHistory({ history }: AnalysisHistoryProps) {
+  const { t } = useTranslation('analysis')
   const shouldShowViewAll = history?.pagination.hasMore ?? false
 
   return (
     <Card className="border-border bg-card p-6">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
-        Analysis History
+        {t('history.title')}
       </h3>
       <div className="space-y-3">
         {history.logs.map((record) => (
@@ -53,7 +55,7 @@ export function LatestsAnalysisHistory({ history }: AnalysisHistoryProps) {
                   'text-xs'
                 )}
               >
-                View
+                {t('buttons.view', { ns: 'common' })}
               </Link>
             </div>
           </div>
@@ -62,7 +64,7 @@ export function LatestsAnalysisHistory({ history }: AnalysisHistoryProps) {
 
       {shouldShowViewAll && (
         <Link className="w-fit" to="/history">
-          View all
+          {t('history.viewAll')}
         </Link>
       )}
     </Card>

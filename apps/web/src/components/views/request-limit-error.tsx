@@ -3,9 +3,11 @@ import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { format } from 'date-fns'
 import { AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { buttonVariants } from '../ui/button'
 
 export function RequestLimitError() {
+  const { t } = useTranslation('errors')
   const { cooldownDate } = useRateLimit()
 
   const formattedDate = format(cooldownDate ? cooldownDate : new Date(), 'PPp')
@@ -20,17 +22,17 @@ export function RequestLimitError() {
 
       <div className="space-y-3">
         <h1 className="text-2xl font-bold text-foreground">
-          Rate Limit Exceeded
+          {t('rateLimit.title')}
         </h1>
 
         {cooldownDate && (
           <p className="text-sm text-card-foreground max-w-80 mx-auto">
-            The limit will be renewed at <strong>{formattedDate}</strong>.
+            {t('rateLimit.renewsAt', { date: formattedDate })}
           </p>
         )}
 
         <Link to="/pricing" className={cn(buttonVariants(), 'mt-3')}>
-          Upgrade your plan for unlimited analyses
+          {t('rateLimit.upgrade')}
         </Link>
       </div>
     </div>
