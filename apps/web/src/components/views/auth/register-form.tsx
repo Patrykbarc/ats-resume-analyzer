@@ -11,31 +11,34 @@ import { useRegisterMutation } from '@/hooks/useRegisterMutation'
 import { RegisterUserSchema, RegisterUserSchemaType } from '@monorepo/schemas'
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
+import { useTranslation } from 'react-i18next'
 import { AuthErrorMessages } from './components/auth-error-messages'
 import { AuthFormFields } from './types/types'
 
-const FORM_FIELDS: AuthFormFields<RegisterUserSchemaType>[] = [
-  {
-    fieldName: 'email',
-    label: 'Email address',
-    placeholder: 'you@example.com',
-    type: 'email'
-  },
-  {
-    fieldName: 'password',
-    label: 'Password',
-    placeholder: '******',
-    type: 'password'
-  },
-  {
-    fieldName: 'confirmPassword',
-    label: 'Confirm passsword',
-    placeholder: '******',
-    type: 'password'
-  }
-]
-
 export function RegisterForm() {
+  const { t } = useTranslation('auth')
+
+  const FORM_FIELDS: AuthFormFields<RegisterUserSchemaType>[] = [
+    {
+      fieldName: 'email',
+      label: t('fields.email'),
+      placeholder: t('fields.emailPlaceholder'),
+      type: 'email'
+    },
+    {
+      fieldName: 'password',
+      label: t('fields.password'),
+      placeholder: t('fields.passwordPlaceholder'),
+      type: 'password'
+    },
+    {
+      fieldName: 'confirmPassword',
+      label: t('fields.confirmPassword'),
+      placeholder: t('fields.passwordPlaceholder'),
+      type: 'password'
+    }
+  ]
+
   const { mutate, isPending, isSuccess, error } = useRegisterMutation({
     onError: (err) => {
       sentryLogger.unexpected(err)
@@ -63,10 +66,9 @@ export function RegisterForm() {
       <>
         <hr className="mb-8" />
         <CardHeader className="text-center">
-          <CardTitle>Check Your Inbox</CardTitle>
+          <CardTitle>{t('register.successTitle')}</CardTitle>
           <CardDescription>
-            We&apos;ve sent a confirmation link to{' '}
-            <span className="font-medium">{emailAddress}</span>.
+            {t('register.successDescription', { email: emailAddress })}
           </CardDescription>
         </CardHeader>
       </>
@@ -117,7 +119,7 @@ export function RegisterForm() {
       </FieldGroup>
 
       <Button type="submit" disabled={isPending}>
-        Register
+        {t('register.submit')}
       </Button>
 
       {error && <AuthErrorMessages error={error} />}

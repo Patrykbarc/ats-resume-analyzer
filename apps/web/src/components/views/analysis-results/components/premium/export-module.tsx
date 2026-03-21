@@ -1,4 +1,5 @@
 import type { PremiumModules } from '@monorepo/types'
+import { useTranslation } from 'react-i18next'
 
 import { ListBlock } from './list-block'
 import { PremiumCard } from './premium-card'
@@ -8,19 +9,25 @@ type ExportModuleProps = {
 }
 
 export function ExportModule({ data }: ExportModuleProps) {
+  const { t } = useTranslation('analysis')
   const { pdf_outline, priority_order, notes } = data
 
   return (
     <PremiumCard
-      title="CV layout order"
-      description="A well-organized layout plan ensures that reports remain legible after downloading."
+      title={t('premium.export.title')}
+      description={t('premium.export.description')}
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <ListBlock title="PDF outline" items={pdf_outline} />
-        <ListBlock title="Priority order" items={priority_order} />
+        <ListBlock title={t('premium.export.pdfOutline')} items={pdf_outline} />
+        <ListBlock
+          title={t('premium.export.priorityOrder')}
+          items={priority_order}
+        />
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-semibold text-foreground">Notes</p>
+        <p className="text-sm font-semibold text-foreground">
+          {t('premium.export.notes')}
+        </p>
         <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
           {notes}
         </p>

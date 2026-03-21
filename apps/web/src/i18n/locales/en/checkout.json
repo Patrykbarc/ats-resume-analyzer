@@ -1,0 +1,20 @@
+{
+  "success": {
+    "title": "Payment Successful!",
+    "description": "Thank you for your purchase. Your order has been confirmed and you now have access to premium features.",
+    "returnHome": "Return to home",
+    "verifying": {
+      "title": "Verifying payment...",
+      "description": "Please wait while we update your account."
+    },
+    "error": {
+      "title": "Verification Error",
+      "message": "We couldn't confirm your payment. Please contact support if funds were deducted."
+    }
+  },
+  "cancel": {
+    "title": "Order Cancelled",
+    "description": "Your payment was not completed. No charges have been made to your account.",
+    "tryAgain": "Try again or choose a different plan."
+  }
+}

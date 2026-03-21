@@ -14,27 +14,27 @@ import {
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AuthErrorMessages } from './components/auth-error-messages'
 import { FieldSuccess } from './components/field-success'
 import { AuthFormFields } from './types/types'
 
-const FORM_FIELDS: AuthFormFields<ResendEmailValidationSchemaType>[] = [
-  {
-    fieldName: 'email',
-    label: 'Email address',
-    placeholder: 'you@example.com',
-    type: 'email'
-  }
-]
-
 export function ForgotPasswordForm() {
+  const { t } = useTranslation('auth')
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  const FORM_FIELDS: AuthFormFields<ResendEmailValidationSchemaType>[] = [
+    {
+      fieldName: 'email',
+      label: t('fields.email'),
+      placeholder: t('fields.emailPlaceholder'),
+      type: 'email'
+    }
+  ]
 
   const { mutate, isPending, isSuccess, error } = useRequestPasswordReset({
     onSuccess: () => {
-      setSuccessMessage(
-        'If an account with that email exists, a password reset link has been sent.'
-      )
+      setSuccessMessage(t('forgotPassword.successMessage'))
     },
     onError: (err) => {
       sentryLogger.unexpected(err)
@@ -97,7 +97,7 @@ export function ForgotPasswordForm() {
       </FieldGroup>
 
       <Button type="submit" disabled={isPending}>
-        Reset password
+        {t('forgotPassword.submit')}
       </Button>
 
       {successMessage && <FieldSuccess message={successMessage} />}

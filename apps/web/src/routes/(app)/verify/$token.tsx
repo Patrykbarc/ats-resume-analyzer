@@ -14,6 +14,7 @@ import {
 import { StatusCodes } from 'http-status-codes'
 import { CircleCheck, CircleX } from 'lucide-react'
 import { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export const Route = createFileRoute('/(app)/verify/$token')({
   component: RouteComponent,
@@ -32,15 +33,8 @@ export const Route = createFileRoute('/(app)/verify/$token')({
   })
 })
 
-const MESSAGES = {
-  ok: 'Your account has been verified. You can now log in.',
-  gone: 'Your verification link has expired.',
-  notFound: 'The verification link is invalid or has already been used.',
-  unknown:
-    'An unknown error occurred during verification. Please try again later.'
-}
-
 function RouteComponent() {
+  const { t } = useTranslation('errors')
   const navigate = useNavigate()
   const { status } = useLoaderData({ from: '/(app)/verify/$token' })
   const { token } = useParams({ from: '/(app)/verify/$token' })
@@ -55,9 +49,9 @@ function RouteComponent() {
 
   if (status === StatusCodes.OK) {
     return (
-      <VerificationStatus icon="SUCCESS" message={MESSAGES.ok}>
+      <VerificationStatus icon="SUCCESS" message={t('verify.ok')}>
         <Link className={buttonVariants({ variant: 'link' })} to="/login">
-          Go to login page
+          {t('verify.goToLogin')}
         </Link>
       </VerificationStatus>
     )
@@ -65,9 +59,9 @@ function RouteComponent() {
 
   if (status === StatusCodes.GONE) {
     return (
-      <VerificationStatus icon="ERROR" message={MESSAGES.gone}>
+      <VerificationStatus icon="ERROR" message={t('verify.gone')}>
         <Button onClick={() => mutate({ token })} variant="link">
-          Request a new one.
+          {t('verify.requestNew')}
         </Button>
       </VerificationStatus>
     )
@@ -75,18 +69,18 @@ function RouteComponent() {
 
   if (status === StatusCodes.NOT_FOUND) {
     return (
-      <VerificationStatus icon="ERROR" message={MESSAGES.notFound}>
+      <VerificationStatus icon="ERROR" message={t('verify.notFound')}>
         <Link className={buttonVariants({ variant: 'link' })} to="/">
-          Return home
+          {t('verify.returnHome')}
         </Link>
       </VerificationStatus>
     )
   }
 
   return (
-    <VerificationStatus icon="ERROR" message={MESSAGES.unknown}>
+    <VerificationStatus icon="ERROR" message={t('verify.unknown')}>
       <Link className={buttonVariants({ variant: 'link' })} to="/">
-        Return home
+        {t('verify.returnHome')}
       </Link>
     </VerificationStatus>
   )

@@ -1,0 +1,15 @@
+{
+  "upload": {
+    "title": "Upload Your Resume",
+    "format": "PDF format",
+    "maxSize": "Max size: 3MB",
+    "chooseFile": "Choose File"
+  },
+  "analyze": {
+    "analyzing": "Analyzing...",
+    "analyze": "Analyze",
+    "proAnalyze": "Pro Analyze",
+    "cancel": "Cancel"
+  },
+  "requestsLeft": "Requests left: {{count}}"
+}

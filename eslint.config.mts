@@ -7,6 +7,7 @@ import tseslint from 'typescript-eslint'
 const IGNORES = {
   ignores: [
     '**/dist',
+    '**/*.d.ts',
     '**/vite.config.ts',
     'tailwind.config.js',
     'eslint.config.mjs',

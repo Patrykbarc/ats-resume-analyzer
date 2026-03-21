@@ -10,9 +10,10 @@ import {
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { CreditCard } from 'lucide-react'
-import { CurrentPlanDetails } from './components/current-plan-details'
+import { useTranslation } from 'react-i18next'
 import { CanceledSubscriptionStatus } from './components/canceled-subscription-status'
 import { ExpiredSubscriptionStatus } from './components/expired-subscription-status'
+import { CurrentPlanDetails } from './components/current-plan-details'
 import { UserBillingInformation } from './types/types'
 
 export function SubscriptionDetailsCard({
@@ -21,6 +22,7 @@ export function SubscriptionDetailsCard({
   subscriptionStatus,
   cancelAtPeriodEnd
 }: UserBillingInformation) {
+  const { t } = useTranslation('account')
   const isCanceled = subscriptionStatus === 'canceled' && !cancelAtPeriodEnd
   const isPendingCancel = subscriptionStatus === 'active' && cancelAtPeriodEnd
 
@@ -29,15 +31,15 @@ export function SubscriptionDetailsCard({
       <CardHeader>
         <div className="flex items-center gap-2">
           <CreditCard className="size-5 text-primary" />
-          <CardTitle>Current Subscription</CardTitle>
+          <CardTitle>{t('subscription.title')}</CardTitle>
         </div>
-        <CardDescription>Manage your subscription plan</CardDescription>
+        <CardDescription>{t('subscription.description')}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {subscriptionStatus == null && (
           <CardContainer className="bg-muted/50">
-            <p className="text-sm">No active subscription found.</p>
+            <p className="text-sm">{t('subscription.noActive')}</p>
             <Link
               to="/pricing"
               className={cn(
@@ -45,7 +47,7 @@ export function SubscriptionDetailsCard({
                 'mt-4'
               )}
             >
-              View pricing
+              {t('buttons.viewPricing', { ns: 'common' })}
             </Link>
           </CardContainer>
         )}

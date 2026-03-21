@@ -22,10 +22,12 @@ import {
 } from '@tanstack/react-table'
 import { File } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 type Column = ColumnDef<HistoryLogs>[]
 
 export function AnalysisHistory() {
+  const { t } = useTranslation('analysis')
   const { user } = useSessionStore()
   const [cursor, setCursor] = useState<string | undefined>(undefined)
   const [accumulatedLogs, setAccumulatedLogs] = useState<HistoryLogs[]>([])
@@ -61,7 +63,7 @@ export function AnalysisHistory() {
   const columns: Column = useMemo(
     () => [
       {
-        header: 'File Name',
+        header: t('history.fileName'),
         accessorKey: 'fileName',
         cell: ({ row: { original } }) => (
           <div className="flex items-center gap-2">
@@ -77,7 +79,7 @@ export function AnalysisHistory() {
         )
       },
       {
-        header: 'Analyzed At',
+        header: t('history.analyzedAt'),
         accessorKey: 'createdAt',
         cell: ({ getValue }) => {
           const createdAt = getValue<HistoryLogs['createdAt']>()
@@ -85,7 +87,7 @@ export function AnalysisHistory() {
         }
       }
     ],
-    []
+    [t]
   )
 
   const table = useReactTable({
@@ -102,9 +104,9 @@ export function AnalysisHistory() {
   return (
     <div className="space-y-4 bg-white border p-6 rounded-xl">
       <div className="space-y-2">
-        <h1 className="leading-none font-semibold">Analysis Records</h1>
+        <h1 className="leading-none font-semibold">{t('history.records')}</h1>
         <p className="text-muted-foreground text-sm">
-          {accumulatedLogs.length} records loaded
+          {t('history.recordsLoaded', { count: accumulatedLogs.length })}
         </p>
       </div>
 
@@ -149,7 +151,7 @@ export function AnalysisHistory() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length}>
-                    No analysis history found
+                    {t('history.noHistory')}
                   </TableCell>
                 </TableRow>
               )}
@@ -165,7 +167,7 @@ export function AnalysisHistory() {
           disabled={isLoading}
           className="w-full"
         >
-          {isLoading ? 'Loading...' : 'Load more'}
+          {isLoading ? t('history.loading') : t('history.loadMore')}
         </Button>
       )}
     </div>

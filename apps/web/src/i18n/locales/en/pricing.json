@@ -1,0 +1,20 @@
+{
+  "plan": {
+    "name": "Pro Analyst",
+    "description": "Everything you need to land your dream job",
+    "recommended": "Recommended",
+    "cta": "Get started",
+    "features": [
+      "Unlimited resume analyses per month",
+      "GPT-4 powered deep-dive analysis",
+      "ATS optimization with keyword matching",
+      "Content & structure recommendations",
+      "Cover letter analysis & generation",
+      "Interview preparation guide",
+      "LinkedIn profile optimization tips",
+      "Skills gap analysis",
+      "Salary negotiation insights",
+      "Career path recommendations"
+    ]
+  }
+}

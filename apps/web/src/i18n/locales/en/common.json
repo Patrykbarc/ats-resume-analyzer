@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "pricing": "Pricing",
+    "account": "Account",
+    "login": "Log In",
+    "signup": "Sign Up",
+    "logout": "Logout"
+  },
+  "footer": {
+    "title": "AI Resume Analyzer",
+    "tagline": "Analyze your resume with advanced AI technology. Get instant feedback, ATS optimization tips, and personalized recommendations to improve your job applications.",
+    "quickLinks": "Quick Links",
+    "privacyPolicy": "Privacy Policy",
+    "copyright": "© {{year}} AI Resume Analyzer. All rights reserved."
+  },
+  "buttons": {
+    "backToHome": "Back to Homepage",
+    "tryAgain": "Try again",
+    "viewPricing": "View pricing",
+    "returnHome": "Return home",
+    "view": "View"
+  }
+}

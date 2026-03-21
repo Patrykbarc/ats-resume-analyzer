@@ -1,8 +1,10 @@
 import { Shield } from 'lucide-react'
-import { sectionsData } from './helper/sections-data'
+import { useTranslation } from 'react-i18next'
+import { getSectionsData } from './helper/sections-data'
 
 export function PrivacyPolicy() {
-  const sections = sectionsData
+  const { t } = useTranslation('privacy')
+  const sections = getSectionsData(t)
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -13,7 +15,7 @@ export function PrivacyPolicy() {
           </div>
         </div>
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl text-balance">
-          Privacy Policy
+          {t('header.title')}
         </h1>
       </header>
 
@@ -25,7 +27,7 @@ export function PrivacyPolicy() {
           id="toc-heading"
           className="mb-4 text-xl font-semibold text-foreground"
         >
-          Table of Contents
+          {t('header.toc')}
         </h2>
         <ol className="space-y-2 text-muted-foreground">
           {sections.map((section) => (

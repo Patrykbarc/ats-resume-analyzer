@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "overallScore": "Overall Score"
+  },
+  "premium": {
+    "atsKeyword": {
+      "title": "ATS Keyword Match",
+      "description": "Keyword coverage and missing terms that influence ATS filters.",
+      "targetRole": "Target role focus:",
+      "notDetected": "Not detected",
+      "matchedKeywords": "Matched keywords",
+      "missingKeywords": "Missing keywords",
+      "optimizationTips": "Optimization tips"
+    },
+    "careerPath": {
+      "title": "Career Path",
+      "description": "Progression options with concrete next steps.",
+      "shortTermRoles": "Short-term roles",
+      "midTermRoles": "Mid-term roles",
+      "longTermRoles": "Long-term roles",
+      "nextSteps": "Next steps"
+    },
+    "contentStructure": {
+      "title": "Content & Structure",
+      "description": "Layout, ordering, and content fixes to keep ATS parsers happy.",
+      "formatIssues": "Format issues",
+      "structureRecommendations": "Structure recommendations",
+      "contentGaps": "Content gaps"
+    },
+    "coverLetter": {
+      "title": "Cover Letter",
+      "description": "Assessment plus a ready-to-use outline for a targeted cover letter.",
+      "fitAnalysis": "Fit analysis",
+      "hook": "Hook",
+      "body": "Body",
+      "close": "Close",
+      "oneShotPrompt": "One-shot prompt",
+      "noteTitle": "Use the prompt above to generate a cover letter.",
+      "noteDescription": "Do not forget to customize the generated letter to better suit your style and job description, especially company name."
+    },
+    "export": {
+      "title": "CV layout order",
+      "description": "A well-organized layout plan ensures that reports remain legible after downloading.",
+      "pdfOutline": "PDF outline",
+      "priorityOrder": "Priority order",
+      "notes": "Notes"
+    },
+    "interviewPrep": {
+      "title": "Interview Preparation",
+      "description": "Talking points, stories, and questions to prepare ahead of interviews.",
+      "elevatorPitch": "Elevator pitch",
+      "likelyQuestions": "Likely questions",
+      "storiesToPrepare": "Stories to prepare",
+      "metricsToCite": "Metrics to cite"
+    },
+    "linkedin": {
+      "title": "LinkedIn Optimization",
+      "description": "Profile positioning, keyword placement, and hygiene actions.",
+      "headline": "Headline",
+      "aboutSummary": "About summary",
+      "featuredKeywords": "Featured keywords",
+      "actionItems": "Action items"
+    },
+    "salaryInsights": {
+      "title": "Salary Negotiation",
+      "description": "Market positioning, levers to negotiate, and risk mitigations.",
+      "rangeEstimate": "Range estimate",
+      "negotiationMoves": "Negotiation moves",
+      "riskFlags": "Risk flags"
+    },
+    "skillsGap": {
+      "title": "Skills Gap Analysis",
+      "description": "Capabilities to build plus a focused learning path.",
+      "gaps": "Gaps",
+      "learningPlan": "Learning plan",
+      "certifications": "Certifications"
+    }
+  },
+  "history": {
+    "title": "Analysis History",
+    "records": "Analysis Records",
+    "recordsLoaded": "{{count}} records loaded",
+    "fileName": "File Name",
+    "analyzedAt": "Analyzed At",
+    "noHistory": "No analysis history found",
+    "viewAll": "View all",
+    "loadMore": "Load more",
+    "loading": "Loading..."
+  },
+  "share": {
+    "button": "Share",
+    "shareOn": "Share on",
+    "copyLink": "Copy link",
+    "copied": "Copied!",
+    "copiedToast": "Copied to clipboard",
+    "failedToast": "Failed to copy",
+    "shareTitle": "Stop letting ATS systems reject your resume!",
+    "shareText": "I used this amazing tool to check my CV and maximize my chances of getting noticed. Try it now!"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "information": {
+    "title": "Account Information",
+    "description": "Your personal account details",
+    "email": "Email",
+    "memberSince": "Member Since"
+  },
+  "subscription": {
+    "title": "Current Subscription",
+    "description": "Manage your subscription plan",
+    "noActive": "No active subscription found.",
+    "plan": "Plan",
+    "nextBillingDate": "Next Billing Date",
+    "monthly": "/ monthly",
+    "cancel": {
+      "button": "Cancel subscription",
+      "title": "Cancel Subscription",
+      "confirm": "Are you sure you want to cancel your Premium subscription?",
+      "activeUntil": "Your subscription will remain active until {{date}}.",
+      "keep": "Keep subscription",
+      "yes": "Yes, cancel",
+      "errorToast": "Failed to cancel subscription. Please try again."
+    },
+    "restore": {
+      "button": "Restore subscription",
+      "title": "Restore subscription",
+      "confirm": "Are you sure you want to restore your Premium subscription?",
+      "cancel": "Cancel",
+      "yes": "Yes, restore",
+      "errorToast": "Failed to restore subscription. Please try again."
+    },
+    "canceled": {
+      "title": "Subscription Cancelled",
+      "expiry": "Your subscription has been cancelled and will expire on {{date}}. After that, you'll be switched to the Basic plan.",
+      "canRestore": "You can restore your subscription at any time before it expires."
+    },
+    "expired": {
+      "title": "Subscription Expired",
+      "description": "Your subscription has expired. You've been switched to the Basic plan."
+    }
+  }
+}

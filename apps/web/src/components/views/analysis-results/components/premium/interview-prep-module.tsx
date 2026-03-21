@@ -1,4 +1,5 @@
 import type { PremiumModules } from '@monorepo/types'
+import { useTranslation } from 'react-i18next'
 
 import { ListBlock } from './list-block'
 import { PremiumCard } from './premium-card'
@@ -8,6 +9,7 @@ type InterviewPrepModuleProps = {
 }
 
 export function InterviewPrepModule({ data }: InterviewPrepModuleProps) {
+  const { t } = useTranslation('analysis')
   const {
     elevator_pitch,
     likely_questions,
@@ -17,13 +19,13 @@ export function InterviewPrepModule({ data }: InterviewPrepModuleProps) {
 
   return (
     <PremiumCard
-      title="Interview Preparation"
-      description="Talking points, stories, and questions to prepare ahead of interviews."
+      title={t('premium.interviewPrep.title')}
+      description={t('premium.interviewPrep.description')}
     >
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-semibold text-foreground">
-            Elevator pitch
+            {t('premium.interviewPrep.elevatorPitch')}
           </p>
           <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
             {elevator_pitch}
@@ -31,11 +33,20 @@ export function InterviewPrepModule({ data }: InterviewPrepModuleProps) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <ListBlock title="Likely questions" items={likely_questions} />
-          <ListBlock title="Stories to prepare" items={stories_to_prepare} />
+          <ListBlock
+            title={t('premium.interviewPrep.likelyQuestions')}
+            items={likely_questions}
+          />
+          <ListBlock
+            title={t('premium.interviewPrep.storiesToPrepare')}
+            items={stories_to_prepare}
+          />
         </div>
 
-        <ListBlock title="Metrics to cite" items={metrics_to_cite} />
+        <ListBlock
+          title={t('premium.interviewPrep.metricsToCite')}
+          items={metrics_to_cite}
+        />
       </div>
     </PremiumCard>
   )
