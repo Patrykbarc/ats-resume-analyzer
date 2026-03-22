@@ -12,8 +12,8 @@ import { RegisterUserSchema, RegisterUserSchemaType } from '@monorepo/schemas'
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
-import { AuthErrorMessages } from './components/auth-error-messages'
-import { AuthFormFields } from './types/types'
+import { AuthErrorMessages } from '../components/auth-error-messages'
+import { AuthFormFields } from '../types/types'
 
 export function RegisterForm() {
   const { t } = useTranslation('auth')

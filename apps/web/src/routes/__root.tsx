@@ -20,15 +20,16 @@ import '../config/sentry.config.js'
 import '../i18n/i18n'
 import '../index.css'
 
+const { VITE_NODE_ENV } = getEnvs()
+const IS_DEVELOPMENT = VITE_NODE_ENV === 'development'
+
 const RootLayout = () => {
-  const { VITE_NODE_ENV } = getEnvs()
   useAuth()
 
   return (
     <>
+      {IS_DEVELOPMENT && <Analytics />}
       <HeadContent />
-
-      {VITE_NODE_ENV !== 'development' && <Analytics />}
       <Toaster />
 
       <NuqsAdapter>
@@ -42,7 +43,7 @@ const RootLayout = () => {
                 )}
               >
                 <Outlet />
-                <Devtools />
+                {IS_DEVELOPMENT && <Devtools />}
               </Sentry.ErrorBoundary>
             </div>
           </main>

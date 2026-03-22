@@ -1,9 +1,9 @@
-import { RegisterForm } from '@/components/views/auth/register-form'
+import { RegisterForm } from '@/components/views/auth/forms/register-form'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_auth/register/')({
-  component: RegisterPage,
+  component: RegisterForm,
   head: () => ({
     meta: [
       {
@@ -12,7 +12,3 @@ export const Route = createFileRoute('/_auth/register/')({
     ]
   })
 })
-
-function RegisterPage() {
-  return <RegisterForm />
-}

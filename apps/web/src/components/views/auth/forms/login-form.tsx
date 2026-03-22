@@ -6,35 +6,61 @@ import {
   FieldLabel
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { useRequestPasswordReset } from '@/hooks/useRequestPasswordReset'
-import {
-  ResendEmailValidationSchema,
-  ResendEmailValidationSchemaType
-} from '@monorepo/schemas'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { useLoginMutation } from '@/hooks/useLoginMutation'
+import { getCurrentUserService } from '@/services/authService'
+import { useSessionStore } from '@/stores/session/useSessionStore'
+import { LoginUserSchema, LoginUserSchemaType } from '@monorepo/schemas'
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
-import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { AuthErrorMessages } from './components/auth-error-messages'
-import { FieldSuccess } from './components/field-success'
-import { AuthFormFields } from './types/types'
+import { AuthErrorMessages } from '../components/auth-error-messages'
+import { AuthFormFields } from '../types/types'
 
-export function ForgotPasswordForm() {
+export function LoginForm() {
   const { t } = useTranslation('auth')
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const { redirect } = useSearch({ from: '/_auth/login/' })
+  const queryClient = useQueryClient()
+  const { setAuthToken, setUser, setIsUserLoggedIn, setIsPremium } =
+    useSessionStore()
 
-  const FORM_FIELDS: AuthFormFields<ResendEmailValidationSchemaType>[] = [
+  const FORM_FIELDS: AuthFormFields<LoginUserSchemaType>[] = [
     {
       fieldName: 'email',
       label: t('fields.email'),
       placeholder: t('fields.emailPlaceholder'),
       type: 'email'
+    },
+    {
+      fieldName: 'password',
+      label: t('fields.password'),
+      placeholder: t('fields.passwordPlaceholder'),
+      type: 'password'
     }
   ]
 
-  const { mutate, isPending, isSuccess, error } = useRequestPasswordReset({
-    onSuccess: () => {
-      setSuccessMessage(t('forgotPassword.successMessage'))
+  const { mutate, isPending, isSuccess, error } = useLoginMutation({
+    onSuccess: async (response) => {
+      const token = response.data.token
+      setAuthToken(token)
+
+      const userData = await queryClient.fetchQuery({
+        queryKey: QUERY_KEYS.session.currentUser,
+        queryFn: getCurrentUserService
+      })
+
+      if (userData) {
+        setUser(userData)
+        setIsUserLoggedIn(true)
+        setIsPremium(userData.isPremium)
+      }
+
+      toast.success(t('login.successToast'))
+      navigate({ to: redirect ?? '/' })
     },
     onError: (err) => {
       sentryLogger.unexpected(err)
@@ -43,13 +69,14 @@ export function ForgotPasswordForm() {
 
   const form = useForm({
     defaultValues: {
-      email: ''
+      email: '',
+      password: ''
     },
     validators: {
-      onSubmit: ResendEmailValidationSchema
+      onSubmit: LoginUserSchema
     },
     onSubmit: async ({ value }) => {
-      mutate(value.email)
+      mutate(value)
     }
   })
 
@@ -96,11 +123,16 @@ export function ForgotPasswordForm() {
         })}
       </FieldGroup>
 
-      <Button type="submit" disabled={isPending}>
-        {t('forgotPassword.submit')}
-      </Button>
+      <div className="flex justify-between items-center">
+        <Button type="submit" disabled={isPending}>
+          {t('login.submit')}
+        </Button>
 
-      {successMessage && <FieldSuccess message={successMessage} />}
+        <Link to="/forgot-password" className="text-sm underline">
+          {t('login.forgotPassword')}
+        </Link>
+      </div>
+
       {error && <AuthErrorMessages error={error} />}
     </form>
   )

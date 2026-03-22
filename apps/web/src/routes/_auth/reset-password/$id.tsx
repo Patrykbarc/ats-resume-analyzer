@@ -1,4 +1,4 @@
-import { ResetPasswordForm } from '@/components/views/auth/reset-password-form'
+import { ResetPasswordForm } from '@/components/views/auth/forms/reset-password-form'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { createFileRoute, useParams } from '@tanstack/react-router'
 
