@@ -1,4 +1,4 @@
-import { AnalysisHistorySkeleton } from '@/components/views/latests-analysis-history/latests-analysis-history-skeleton'
+import { AnalysisHistorySkeleton } from '@/components/views/latests-analysis-history/components/skeletons/latests-analysis-history-skeleton'
 import { ResumeAnalyzer } from '@/components/views/resume-analyzer/resume-analyzer'
 import { Faq } from '@/components/views/seo/faq'
 import { Features } from '@/components/views/seo/features'

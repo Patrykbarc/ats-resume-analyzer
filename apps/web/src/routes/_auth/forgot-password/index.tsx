@@ -1,9 +1,9 @@
-import { ForgotPasswordForm } from '@/components/views/auth/forgot-password-form'
+import { ForgotPasswordForm } from '@/components/views/auth/forms/forgot-password-form'
 import { buildPageTitle } from '@/lib/buildPageTitle'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_auth/forgot-password/')({
-  component: RouteComponent,
+  component: ForgotPasswordForm,
   head: () => ({
     meta: [
       {
@@ -12,7 +12,3 @@ export const Route = createFileRoute('/_auth/forgot-password/')({
     ]
   })
 })
-
-function RouteComponent() {
-  return <ForgotPasswordForm />
-}

@@ -15,10 +15,10 @@ export default function PricingPage() {
       <section>
         <div className="mb-12 text-center">
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            One Powerful Plan
+            {t('cta.title', { ns: 'pricing' })}
           </h1>
           <p className="mb-4 text-xl text-muted-foreground">
-            Professional resume analysis powered by GPT-4
+            {t('cta.description', { ns: 'pricing' })}
           </p>
 
           <div className="inline-flex flex-wrap justify-center gap-4">
@@ -40,7 +40,7 @@ export default function PricingPage() {
 
       <section className="mt-16">
         <h2 className="mb-8 text-center text-2xl font-semibold text-foreground">
-          Frequently Asked Questions
+          {t('title')}
         </h2>
         <div className="grid gap-6 md:grid-cols-2">
           {faq.map((item) => (
@@ -59,18 +59,17 @@ export default function PricingPage() {
 
       <section className="mt-16 rounded-lg border border-border bg-card p-8 text-center">
         <h2 className="mb-3 text-2xl font-semibold text-foreground">
-          Need higher limits or custom features?
+          {t('enterprise')}
         </h2>
         <p className="mb-6 text-muted-foreground">
-          Contact our team for enterprise solutions, volume discounts, or custom
-          analysis requirements.
+          {t('enterpriseDescription')}
         </p>
 
         <a
           className={buttonVariants({ variant: 'outline' })}
           href={`mailto:${VITE_CONTACT_EMAIL}`}
         >
-          Contact Sales
+          {t('contactSales')}
         </a>
       </section>
     </div>

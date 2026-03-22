@@ -12,9 +12,9 @@ import { sentryLogger } from '@monorepo/sentry-logger'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AuthErrorMessages } from './components/auth-error-messages'
-import { FieldSuccess } from './components/field-success'
-import { AuthFormFields } from './types/types'
+import { AuthErrorMessages } from '../components/auth-error-messages'
+import { FieldSuccess } from '../components/field-success'
+import { AuthFormFields } from '../types/types'
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const { t } = useTranslation('auth')
