@@ -1,11 +1,14 @@
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslation } from 'react-i18next'
 
 export function AnalysisHistorySkeleton() {
+  const { t } = useTranslation('analysis')
+
   return (
     <Card className="border-border bg-card p-6">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
-        Analysis History
+        {t('history.title')}
       </h3>
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, index) => (

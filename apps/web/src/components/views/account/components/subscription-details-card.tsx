@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { CreditCard } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { CanceledSubscriptionStatus } from './components/canceled-subscription-status'
-import { ExpiredSubscriptionStatus } from './components/expired-subscription-status'
-import { CurrentPlanDetails } from './components/current-plan-details'
-import { UserBillingInformation } from './types/types'
+import { UserBillingInformation } from '../types/types'
+import { CanceledSubscriptionStatus } from './canceled-subscription-status'
+import { CurrentPlanDetails } from './current-plan-details'
+import { ExpiredSubscriptionStatus } from './expired-subscription-status'
 
 export function SubscriptionDetailsCard({
   id,

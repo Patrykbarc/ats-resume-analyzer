@@ -1,9 +1,9 @@
 import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { buttonVariants } from '../ui/button'
+import { buttonVariants } from '../../ui/button'
 
-export function NotFound() {
+export function NotFoundPage() {
   const { t } = useTranslation('errors')
 
   return (

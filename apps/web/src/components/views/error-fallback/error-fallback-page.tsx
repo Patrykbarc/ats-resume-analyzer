@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
-import { buttonVariants } from '../ui/button'
+import { buttonVariants } from '../../ui/button'
 
 type Props = {
   resetError: () => void
 }
 
-export function ErrorFallback({ resetError }: Props) {
+export function ErrorFallbackPage({ resetError }: Props) {
   const { t } = useTranslation('errors')
 
   return (
