@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next'
 
 type Column = ColumnDef<HistoryLogs>[]
 
-export function AnalysisHistory() {
+export function AnalysisHistoryPage() {
   const { t } = useTranslation('analysis')
   const { user } = useSessionStore()
   const [cursor, setCursor] = useState<string | undefined>(undefined)

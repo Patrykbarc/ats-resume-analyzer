@@ -7,6 +7,7 @@ import auth from './locales/en/auth.json'
 import checkout from './locales/en/checkout.json'
 import common from './locales/en/common.json'
 import errors from './locales/en/errors.json'
+import faq from './locales/en/faq.json'
 import pricing from './locales/en/pricing.json'
 import privacy from './locales/en/privacy.json'
 import resumeAnalyzer from './locales/en/resume-analyzer.json'
@@ -23,7 +24,8 @@ export const resources = {
     checkout,
     errors,
     seo,
-    privacy
+    privacy,
+    faq
   }
 }
 

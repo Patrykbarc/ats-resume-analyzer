@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { RequestLimitError } from '../request-limit-error'
+import { RequestLimitError } from '../../ui/request-limit-error'
 import { AnalyzeFile } from './components/analyze-file'
 import { RequestsLeft } from './components/requests-left'
 import { UploadFile } from './components/upload-file'

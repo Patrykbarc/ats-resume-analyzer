@@ -100,4 +100,3 @@ function PricingCard({ showFeatures }: { showFeatures: boolean }) {
     </div>
   )
 }
-

@@ -1,13 +1,9 @@
-import { AnalysisResults } from '@/components/views/analysis-results/analysis-results'
-import { AnalysisSkeletonWithNavigation } from '@/components/views/analysis-results/components/analysis-results-skeleton'
-import { NotFound } from '@/components/views/not-found'
-import { useGetAnalyseById } from '@/hooks/useGetAnalyseById'
+import { AnalysisResultPage } from '@/components/views/analysis-result/analysis-result-page'
 import { buildPageTitle } from '@/lib/buildPageTitle'
-import { createFileRoute, Link, useParams } from '@tanstack/react-router'
-import { StatusCodes } from 'http-status-codes'
-import { ArrowLeft } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+
 export const Route = createFileRoute('/(app)/analyse/$id')({
-  component: Analysis,
+  component: AnalysisResultPage,
   head: () => ({
     meta: [
       {
@@ -16,31 +12,3 @@ export const Route = createFileRoute('/(app)/analyse/$id')({
     ]
   })
 })
-
-function Analysis() {
-  const { id } = useParams({ from: '/(app)/analyse/$id' })
-  const { data: analysis, isLoading, isError, error } = useGetAnalyseById(id)
-
-  if (isLoading) {
-    return <AnalysisSkeletonWithNavigation />
-  }
-
-  if (isError) {
-    if (error.status === StatusCodes.NOT_FOUND) {
-      return <NotFound />
-    }
-
-    return <div className="text-rose-500">{error.message}</div>
-  }
-
-  return (
-    <div>
-      <div className="pb-4">
-        <Link to="/" className="flex gap-2 items-center">
-          <ArrowLeft size={16} /> Home
-        </Link>
-      </div>
-      <AnalysisResults analysis={analysis.data} />
-    </div>
-  )
-}

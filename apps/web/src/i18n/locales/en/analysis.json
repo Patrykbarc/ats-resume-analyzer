@@ -85,16 +85,12 @@
     "noHistory": "No analysis history found",
     "viewAll": "View all",
     "loadMore": "Load more",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "analysisScore": "{{score}} / 100"
   },
-  "share": {
-    "button": "Share",
-    "shareOn": "Share on",
-    "copyLink": "Copy link",
-    "copied": "Copied!",
-    "copiedToast": "Copied to clipboard",
-    "failedToast": "Failed to copy",
-    "shareTitle": "Stop letting ATS systems reject your resume!",
-    "shareText": "I used this amazing tool to check my CV and maximize my chances of getting noticed. Try it now!"
+  "filePreview": {
+    "title": "Preview",
+    "description": "This is the raw, unformatted text extracted from your document. ATS systems analyze this exact content, meaning any errors in parsing (like missing formatting or broken line breaks) can severely impact their ability to read key information.",
+    "loading": "Loading preview..."
   }
 }

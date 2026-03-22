@@ -1,0 +1,25 @@
+{
+  "brief": [
+    "Unlimited Resume Analyses/Month",
+    "GPT-4 Deep Analysis",
+    "Career Guidance"
+  ],
+  "questions": [
+    {
+      "question": "What if I exceed my analysis limit?",
+      "answer": "There is no limit on analyses for Pro users. Free users can upgrade anytime to access more analyses."
+    },
+    {
+      "question": "Can I cancel anytime?",
+      "answer": "Yes, cancel your subscription anytime with no hidden fees. You'll keep access until the end of your billing period."
+    },
+    {
+      "question": "Do you offer discounts?",
+      "answer": "Yes! Annual subscriptions get 20% off. We also offer enterprise plans for organizations."
+    },
+    {
+      "question": "How long do I have access to reports?",
+      "answer": "All your analysis reports are stored indefinitely. You can download and reference them anytime."
+    }
+  ]
+}

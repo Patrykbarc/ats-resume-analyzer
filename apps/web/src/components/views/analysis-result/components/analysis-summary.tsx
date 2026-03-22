@@ -24,7 +24,9 @@ export function AnalysisSummary({
         </h3>
         <div className="grid text-end gap-3">
           <Progress value={+score} />
-          <span className="text-xl font-bold">{score} / 100</span>
+          <span className="text-xl font-bold">
+            {t('history.analysisScore', { score })}
+          </span>
         </div>
         <p className="mt-3  text-muted-foreground">{justification}</p>
       </CardContent>

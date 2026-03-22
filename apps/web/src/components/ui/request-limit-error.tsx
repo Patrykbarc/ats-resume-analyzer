@@ -4,7 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { format } from 'date-fns'
 import { AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { buttonVariants } from '../ui/button'
+import { buttonVariants } from './button'
 
 export function RequestLimitError() {
   const { t } = useTranslation('errors')

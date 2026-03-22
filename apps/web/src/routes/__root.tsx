@@ -1,8 +1,8 @@
-import { Devtools } from '@/components/views/devtools'
-import { ErrorFallback } from '@/components/views/error-fallback'
+import { Devtools } from '@/components/ui/devtools.js'
+import { ErrorFallbackPage } from '@/components/views/error-fallback/error-fallback-page.js'
 import { Footer } from '@/components/views/navigation/footer'
 import { Navigation } from '@/components/views/navigation/navigation'
-import { NotFound } from '@/components/views/not-found'
+import { NotFoundPage } from '@/components/views/not-found/not-found-page.js'
 import { metaTags } from '@/constants/meta-tags'
 import { useAuth } from '@/hooks/useAuth'
 import { getEnvs } from '@/lib/getEnv'
@@ -38,7 +38,7 @@ const RootLayout = () => {
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
               <Sentry.ErrorBoundary
                 fallback={({ resetError }) => (
-                  <ErrorFallback resetError={resetError} />
+                  <ErrorFallbackPage resetError={resetError} />
                 )}
               >
                 <Outlet />
@@ -55,7 +55,7 @@ const RootLayout = () => {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
-  notFoundComponent: NotFound,
+  notFoundComponent: NotFoundPage,
   head: () => ({
     title: metaTags.title,
     meta: [

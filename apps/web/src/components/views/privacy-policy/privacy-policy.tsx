@@ -2,7 +2,7 @@ import { Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getSectionsData } from './helper/sections-data'
 
-export function PrivacyPolicy() {
+export function PrivacyPolicyPage() {
   const { t } = useTranslation('privacy')
   const sections = getSectionsData(t)
 
