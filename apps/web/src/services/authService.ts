@@ -12,6 +12,10 @@ import { AuthType, VerifyUserApiResponse } from '@monorepo/types'
 import { isAxiosError } from 'axios'
 import { StatusCodes } from 'http-status-codes'
 
+export const refreshTokenService = async () => {
+  return await apiClient.post<AuthType>('/auth/refresh')
+}
+
 export const loginService = async (value: LoginUserSchemaType) => {
   const response = await apiClient.post<AuthType>('/auth/login', {
     ...value

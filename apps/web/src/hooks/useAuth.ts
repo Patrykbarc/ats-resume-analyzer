@@ -1,5 +1,5 @@
-import { apiClient } from '@/api/apiClient'
 import { clearToken, setToken } from '@/api/tokenStorage'
+import { refreshTokenService } from '@/services/authService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { useEffect, useRef, useState } from 'react'
 import { useGetCurrentUser } from './useGetCurrentUser'
@@ -32,7 +32,7 @@ export const useAuth = () => {
 
     const refreshSession = async () => {
       try {
-        const response = await apiClient.post('/auth/refresh')
+        const response = await refreshTokenService()
         setToken(response.data.token)
         setHasRefreshed(true)
       } catch {
