@@ -12,7 +12,6 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useCancelSubscription } from '@/hooks/checkout/useCancelSubscription'
-import { cn } from '@/lib/utils'
 import { sentryLogger } from '@monorepo/sentry-logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
@@ -59,7 +58,9 @@ export function CancelSubscription({
         <AlertDialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="size-5 text-destructive" />
-            <AlertDialogTitle>{t('subscription.cancel.title')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('subscription.cancel.title')}
+            </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="space-y-2">
             <span>
@@ -72,16 +73,9 @@ export function CancelSubscription({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel
-            className={cn(
-              buttonVariants({ variant: 'default' }),
-              'hover:text-white'
-            )}
-          >
-            {t('subscription.cancel.keep')}
-          </AlertDialogCancel>
+          <AlertDialogCancel>{t('subscription.cancel.keep')}</AlertDialogCancel>
           <AlertDialogAction
-            className={buttonVariants({ variant: 'secondary' })}
+            className={buttonVariants({ variant: 'destructive' })}
             onClick={() => mutate({ id })}
           >
             {t('subscription.cancel.yes')}

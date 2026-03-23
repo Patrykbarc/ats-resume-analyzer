@@ -101,6 +101,11 @@ export const clearRefreshToken = async (id: string) =>
     data: { refreshToken: null }
   })
 
+export const deleteUserAccount = async (userId: string) => {
+  await prisma.requestLog.deleteMany({ where: { userId } })
+  await prisma.user.delete({ where: { id: userId } })
+}
+
 export const computeIsPremium = (user: {
   isPremium: boolean
   subscriptionCurrentPeriodEnd: Date | null

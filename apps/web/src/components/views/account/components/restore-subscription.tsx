@@ -9,10 +9,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRestoreSubscription } from '@/hooks/checkout/useRestoreSubscription'
-import { cn } from '@/lib/utils'
 import { User } from '@monorepo/database'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
@@ -46,12 +45,7 @@ export function RestoreSubscription({
   return (
     <AlertDialog>
       <AlertDialogTrigger className={className} asChild>
-        <Button
-          variant="default"
-          size="sm"
-          className="w-fit md:ml-auto"
-          disabled={isPending}
-        >
+        <Button size="sm" className="w-fit md:ml-auto" disabled={isPending}>
           {t('subscription.restore.button')}
         </Button>
       </AlertDialogTrigger>
@@ -68,15 +62,10 @@ export function RestoreSubscription({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel
-            className={cn(buttonVariants({ variant: 'secondary' }))}
-          >
+          <AlertDialogCancel>
             {t('subscription.restore.cancel')}
           </AlertDialogCancel>
-          <AlertDialogAction
-            className={cn(buttonVariants({ variant: 'default' }))}
-            onClick={() => mutate({ id })}
-          >
+          <AlertDialogAction onClick={() => mutate({ id })}>
             {t('subscription.restore.yes')}
           </AlertDialogAction>
         </AlertDialogFooter>

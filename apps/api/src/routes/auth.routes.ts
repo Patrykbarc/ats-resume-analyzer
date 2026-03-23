@@ -8,6 +8,7 @@ import {
 import { Router } from 'express'
 import { authAttemptLimiter } from '../config/limiter.config'
 import {
+  deleteAccount,
   getCurrentUser,
   loginUser,
   logoutUser,
@@ -51,5 +52,6 @@ router.post(
 router.post('/password/reset', validateData(ResetPasswordSchema), resetPassword)
 router.post('/logout', logoutUser)
 router.get('/me', requireAuth, getCurrentUser)
+router.delete('/account', requireAuth, deleteAccount)
 
 export default router

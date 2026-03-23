@@ -119,3 +119,7 @@ export const requestPasswordReset = async (
 export const resetPassword = async (data: ResetPasswordSchemaType) => {
   await apiClient.post('/auth/password/reset', data)
 }
+
+export const deleteAccountService = async () => {
+  return await apiClient.delete('/auth/account')
+}
