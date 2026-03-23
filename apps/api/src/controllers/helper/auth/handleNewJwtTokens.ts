@@ -31,7 +31,7 @@ export const handleNewJwtTokens = async ({
     data: { refreshToken }
   })
 
-  const isProduction = process.env.NODE_ENV === 'production'
+  const isProduction = getEnvs().NODE_ENV === 'production'
 
   res.cookie('jwt_refresh', refreshToken, {
     ...jwtRefreshCookieOptions(isProduction),

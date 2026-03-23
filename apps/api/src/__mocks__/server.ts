@@ -5,11 +5,13 @@ export const prisma = {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
     create: vi.fn(),
-    update: vi.fn()
+    update: vi.fn(),
+    delete: vi.fn()
   },
   requestLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
+    deleteMany: vi.fn()
   },
   analysisJob: {
     create: vi.fn(),

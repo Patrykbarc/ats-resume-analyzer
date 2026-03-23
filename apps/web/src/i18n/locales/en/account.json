@@ -31,12 +31,21 @@
     },
     "canceled": {
       "title": "Subscription Cancelled",
-      "expiry": "Your subscription has been cancelled and will expire on {{date}}. After that, you'll be switched to the Basic plan.",
+      "expiry": "Your subscription has been cancelled and will expire on {{date}}.\nAfter that, you'll be switched to the Basic plan.",
       "canRestore": "You can restore your subscription at any time before it expires."
     },
     "expired": {
       "title": "Subscription Expired",
       "description": "Your subscription has expired. You've been switched to the Basic plan."
     }
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "description": "Permanently delete your account and all associated data. This action cannot be undone.",
+    "button": "Delete account",
+    "confirm": "Are you sure you want to permanently delete your account? All your data will be lost.",
+    "keep": "Keep account",
+    "yes": "Yes, delete my account",
+    "errorToast": "Failed to delete account. Please try again."
   }
 }

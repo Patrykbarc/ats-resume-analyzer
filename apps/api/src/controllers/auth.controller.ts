@@ -1,15 +1,13 @@
 import * as bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
+import Stripe from 'stripe'
 import { getEnvs } from '../lib/getEnv'
 import { logger } from '../server'
 import {
-  sendPasswordResetEmail,
-  sendRegisterConfirmationEmail
-} from '../services/email.service'
-import {
   clearRefreshToken,
   computeIsPremium,
+  deleteUserAccount,
   findUserBasicInfo,
   findUserByConfirmationToken,
   findUserByConfirmationTokenForResend,
@@ -23,14 +21,25 @@ import {
   updateConfirmationToken,
   updateResetPasswordToken
 } from '../services/auth.service'
+import { findUserWithSubscription } from '../services/checkout.service'
+import {
+  sendPasswordResetEmail,
+  sendRegisterConfirmationEmail
+} from '../services/email.service'
 import { createNewUser } from './helper/auth/createNewUser'
 import { generateRegistrationToken } from './helper/auth/generateRegistrationToken'
 import { getConfirmationTokenExpiry } from './helper/auth/getConfirmationTokenExpiry'
-import { handleNewJwtTokens, jwtRefreshCookieOptions } from './helper/auth/handleNewJwtTokens'
+import {
+  handleNewJwtTokens,
+  jwtRefreshCookieOptions
+} from './helper/auth/handleNewJwtTokens'
 import { verifyIsTokenExpired } from './helper/auth/verifyIsTokenExpired'
 
 import { AuthErrorCodes } from '@monorepo/types'
 import jwt from 'jsonwebtoken'
+
+const { STRIPE_SECRET_KEY } = getEnvs()
+const stripe = new Stripe(STRIPE_SECRET_KEY, { typescript: true })
 
 export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body
@@ -114,7 +123,10 @@ export const refreshToken = async (req: Request, res: Response) => {
   const user = await findUserByIdAndRefreshToken(userId, refreshToken)
 
   if (!user) {
-    res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
+    res.clearCookie(
+      'jwt_refresh',
+      jwtRefreshCookieOptions(getEnvs().NODE_ENV === 'production')
+    )
     return res.status(StatusCodes.UNAUTHORIZED).json({
       message: AuthErrorCodes.REFRESH_TOKEN_EXPIRED
     })
@@ -173,7 +185,11 @@ export const resendVerificationLink = async (req: Request, res: Response) => {
   const confirmationToken = generateRegistrationToken()
   const confirmationTokenExpiry = getConfirmationTokenExpiry()
 
-  await updateConfirmationToken(user.id, confirmationToken, confirmationTokenExpiry)
+  await updateConfirmationToken(
+    user.id,
+    confirmationToken,
+    confirmationTokenExpiry
+  )
 
   await sendRegisterConfirmationEmail({
     reciever: user.email,
@@ -201,7 +217,10 @@ export const logoutUser = async (req: Request, res: Response) => {
 
   await clearRefreshToken(decoded.userId)
 
-  res.clearCookie('jwt_refresh', jwtRefreshCookieOptions(process.env.NODE_ENV === 'production'))
+  res.clearCookie(
+    'jwt_refresh',
+    jwtRefreshCookieOptions(getEnvs().NODE_ENV === 'production')
+  )
 
   res.status(StatusCodes.OK).json({
     message: 'Logged out successfully.'
@@ -228,9 +247,10 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     })
   }
 
-  const { subscriptionCurrentPeriodEnd, ...userWithoutPeriodEnd } = user as typeof user & {
-    subscriptionCurrentPeriodEnd?: Date | null
-  }
+  const { subscriptionCurrentPeriodEnd, ...userWithoutPeriodEnd } =
+    user as typeof user & {
+      subscriptionCurrentPeriodEnd?: Date | null
+    }
 
   const isPremiumValue = computeIsPremium({
     isPremium: user.isPremium,
@@ -258,7 +278,11 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
   const resetPasswordToken = generateRegistrationToken()
   const resetPasswordExpiry = getConfirmationTokenExpiry()
 
-  await updateResetPasswordToken(user.id, resetPasswordToken, resetPasswordExpiry)
+  await updateResetPasswordToken(
+    user.id,
+    resetPasswordToken,
+    resetPasswordExpiry
+  )
 
   await sendPasswordResetEmail({
     reciever: user.email,
@@ -296,4 +320,32 @@ export const resetPassword = async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).json({
     message: 'Password has been reset successfully.'
   })
+}
+
+export const deleteAccount = async (req: Request, res: Response) => {
+  const userId = (req.user as { id: string }).id
+
+  const user = await findUserWithSubscription(userId)
+
+  if (!user) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ message: 'User not found.' })
+  }
+
+  if (
+    user.stripeSubscriptionId &&
+    ['active', 'trialing', 'past_due'].includes(user.subscriptionStatus ?? '')
+  ) {
+    await stripe.subscriptions.cancel(user.stripeSubscriptionId)
+  }
+
+  await deleteUserAccount(userId)
+
+  res.clearCookie(
+    'jwt_refresh',
+    jwtRefreshCookieOptions(getEnvs().NODE_ENV === 'production')
+  )
+
+  res.status(StatusCodes.OK).json({ message: 'Account deleted successfully.' })
 }

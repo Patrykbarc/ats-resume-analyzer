@@ -24,11 +24,10 @@ export function CanceledSubscriptionStatus({
         <p className="text-sm font-medium text-destructive">
           {t('subscription.canceled.title')}
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm whitespace-pre-line text-muted-foreground mt-1">
           <span>
             {t('subscription.canceled.expiry', { date: nextBillingDate })}
-          </span>
-          <br />
+          </span>{' '}
           <span>{t('subscription.canceled.canRestore')}</span>
         </p>
 

@@ -9,6 +9,7 @@ import { User } from '@monorepo/database'
 import { format } from 'date-fns'
 import { UserIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { DeleteAccount } from './delete-account'
 
 type AccountInformationCardProps = {
   email: User['email']
@@ -46,6 +47,7 @@ export function AccountInformationCard({
             <p className="text-base text-foreground">{createdAtFormatted}</p>
           </div>
         </div>
+        <DeleteAccount />
       </CardContent>
     </Card>
   )

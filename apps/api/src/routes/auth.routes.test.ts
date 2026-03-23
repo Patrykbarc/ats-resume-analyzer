@@ -3,6 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import app from '../app'
 import { prisma } from '../server'
 
+const mockStripe = vi.hoisted(() => ({
+  subscriptions: { cancel: vi.fn() }
+}))
+
+vi.mock('stripe', () => ({ default: vi.fn(() => mockStripe) }))
+
+vi.mock('../services/checkout.service', () => ({
+  findUserWithSubscription: vi.fn()
+}))
+
 vi.mock('../server')
 
 vi.mock('bcryptjs', () => ({
@@ -69,6 +79,7 @@ import { createNewUser } from '../controllers/helper/auth/createNewUser'
 import { handleNewJwtTokens } from '../controllers/helper/auth/handleNewJwtTokens'
 import { verifyIsTokenExpired } from '../controllers/helper/auth/verifyIsTokenExpired'
 import { requireAuth } from '../middleware/require-auth.middleware'
+import { findUserWithSubscription } from '../services/checkout.service'
 import {
   sendPasswordResetEmail,
   sendRegisterConfirmationEmail
@@ -509,5 +520,105 @@ describe('GET /api/auth/me', () => {
     const res = await request(app).get(`${API_URL}/me`)
     expect(res.statusCode).toBe(200)
     expect(res.body.isPremium).toBe(true)
+  })
+})
+
+describe('DELETE /api/auth/account', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns 401 when not authenticated', async () => {
+    vi.mocked(requireAuth).mockImplementation((_req, res, _next) => {
+      res.status(401).json({ message: 'Unauthorized' })
+    })
+
+    const res = await request(app).delete(`${API_URL}/account`)
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('returns 404 when user is not found', async () => {
+    vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
+      req.user = { id: 'user-id' }
+      next()
+    })
+    vi.mocked(findUserWithSubscription).mockResolvedValue(null)
+
+    const res = await request(app).delete(`${API_URL}/account`)
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('returns 200 when user has no subscription', async () => {
+    vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
+      req.user = { id: 'user-id' }
+      next()
+    })
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: null,
+      subscriptionStatus: null
+    } as never)
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = await request(app).delete(`${API_URL}/account`)
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toMatchObject({ message: 'Account deleted successfully.' })
+    expect(mockStripe.subscriptions.cancel).not.toHaveBeenCalled()
+  })
+
+  it('returns 200 and cancels Stripe when subscription is active', async () => {
+    vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
+      req.user = { id: 'user-id' }
+      next()
+    })
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: 'sub_1',
+      subscriptionStatus: 'active'
+    } as never)
+    mockStripe.subscriptions.cancel.mockResolvedValue({})
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = await request(app).delete(`${API_URL}/account`)
+    expect(res.statusCode).toBe(200)
+    expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith('sub_1')
+  })
+
+  it('returns 200 and cancels Stripe when subscription is trialing', async () => {
+    vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
+      req.user = { id: 'user-id' }
+      next()
+    })
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: 'sub_1',
+      subscriptionStatus: 'trialing'
+    } as never)
+    mockStripe.subscriptions.cancel.mockResolvedValue({})
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = await request(app).delete(`${API_URL}/account`)
+    expect(res.statusCode).toBe(200)
+    expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith('sub_1')
+  })
+
+  it('returns 200 and cancels Stripe when subscription is past_due', async () => {
+    vi.mocked(requireAuth).mockImplementation((req, _res, next) => {
+      req.user = { id: 'user-id' }
+      next()
+    })
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: 'sub_1',
+      subscriptionStatus: 'past_due'
+    } as never)
+    mockStripe.subscriptions.cancel.mockResolvedValue({})
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = await request(app).delete(`${API_URL}/account`)
+    expect(res.statusCode).toBe(200)
+    expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith('sub_1')
   })
 })

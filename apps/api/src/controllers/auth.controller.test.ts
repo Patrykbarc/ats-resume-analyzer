@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockStripe = vi.hoisted(() => ({
+  subscriptions: { cancel: vi.fn() }
+}))
+
+vi.mock('stripe', () => ({ default: vi.fn(() => mockStripe) }))
+
+vi.mock('../services/checkout.service', () => ({
+  findUserWithSubscription: vi.fn()
+}))
+
 vi.mock('../server')
 
 vi.mock('bcryptjs', () => ({
@@ -27,20 +37,29 @@ vi.mock('./helper/auth/createNewUser', () => ({
 
 vi.mock('./helper/auth/handleNewJwtTokens', () => ({
   handleNewJwtTokens: vi.fn(() => Promise.resolve('mocked-access-token')),
-  jwtRefreshCookieOptions: vi.fn(() => ({ httpOnly: true, secure: false, sameSite: 'lax' }))
+  jwtRefreshCookieOptions: vi.fn(() => ({
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax'
+  }))
 }))
 
 vi.mock('./helper/auth/verifyIsTokenExpired', () => ({
   verifyIsTokenExpired: vi.fn()
 }))
 
-
 import * as bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../server'
+import { findUserWithSubscription } from '../services/checkout.service'
 import { sendRegisterConfirmationEmail } from '../services/email.service'
 import { makeReq, makeRes } from '../test/helpers'
-import { loginUser, refreshToken, registerUser } from './auth.controller'
+import {
+  deleteAccount,
+  loginUser,
+  refreshToken,
+  registerUser
+} from './auth.controller'
 import { createNewUser } from './helper/auth/createNewUser'
 import { handleNewJwtTokens } from './helper/auth/handleNewJwtTokens'
 
@@ -181,7 +200,83 @@ describe('refreshToken', () => {
       makeReq({ cookies: { jwt_refresh: 'valid-refresh' } }),
       res
     )
+
     expect(res.status).toHaveBeenCalledWith(200)
     expect(res.json).toHaveBeenCalledWith({ token: 'new-access-token' })
+  })
+})
+
+describe('deleteAccount', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns 404 when user is not found', async () => {
+    vi.mocked(findUserWithSubscription).mockResolvedValue(null)
+
+    const res = makeRes()
+    await deleteAccount(makeReq({ user: { id: 'user-id' } }), res)
+    expect(res.status).toHaveBeenCalledWith(404)
+  })
+
+  it('returns 200 and skips Stripe when user has no subscription', async () => {
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: null,
+      subscriptionStatus: null
+    } as never)
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = makeRes()
+    await deleteAccount(makeReq({ user: { id: 'user-id' } }), res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mockStripe.subscriptions.cancel).not.toHaveBeenCalled()
+  })
+
+  it('returns 200 and cancels Stripe when subscription is active', async () => {
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: 'sub_1',
+      subscriptionStatus: 'active'
+    } as never)
+    mockStripe.subscriptions.cancel.mockResolvedValue({})
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = makeRes()
+    await deleteAccount(makeReq({ user: { id: 'user-id' } }), res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith('sub_1')
+  })
+
+  it('returns 200 and skips Stripe when subscription is already canceled', async () => {
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: 'sub_1',
+      subscriptionStatus: 'canceled'
+    } as never)
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = makeRes()
+    await deleteAccount(makeReq({ user: { id: 'user-id' } }), res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(mockStripe.subscriptions.cancel).not.toHaveBeenCalled()
+  })
+
+  it('calls clearCookie on success', async () => {
+    vi.mocked(findUserWithSubscription).mockResolvedValue({
+      id: 'user-id',
+      stripeSubscriptionId: null,
+      subscriptionStatus: null
+    } as never)
+    vi.mocked(prisma.requestLog.deleteMany).mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.user.delete).mockResolvedValue({} as never)
+
+    const res = makeRes()
+    await deleteAccount(makeReq({ user: { id: 'user-id' } }), res)
+    expect(res.clearCookie).toHaveBeenCalledWith(
+      'jwt_refresh',
+      expect.any(Object)
+    )
   })
 })
