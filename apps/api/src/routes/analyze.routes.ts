@@ -44,7 +44,6 @@ router.post(
   '/analyze/premium',
   requireAuth,
   requirePremium,
-  userAnalyzeLimiter,
   multipartParser,
   validateFile(FileSchema),
   createAnalyze

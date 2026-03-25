@@ -35,7 +35,12 @@ export const useRateLimit = () => {
       setRequestsCooldownRaw(null)
       setRequestsLeft(null)
     }
-  }, [requestsCooldown, isCooldownActive, setRequestsCooldownRaw, setRequestsLeft])
+  }, [
+    requestsCooldown,
+    isCooldownActive,
+    setRequestsCooldownRaw,
+    setRequestsLeft
+  ])
 
   const setRequestsCooldown = useCallback(
     (value: string | null) => {

@@ -9,7 +9,7 @@
   },
   "rateLimit": {
     "title": "Rate Limit Exceeded",
-    "renewsAt": "The limit will be renewed at {{date}}.",
+    "renewsAt": "The limit will be renewed at\n{{date}}.",
     "upgrade": "Upgrade your plan for unlimited analyses"
   },
   "verify": {

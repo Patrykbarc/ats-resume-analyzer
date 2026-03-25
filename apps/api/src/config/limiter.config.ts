@@ -11,6 +11,9 @@ const DAY = 24 * 60 * 60 * 1000
 
 const { NODE_ENV } = getEnvs()
 
+const MAX_REQUESTS =
+  NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY
+
 const analyzeStore = new RedisStore({
   sendCommand: (...args: string[]) =>
     redisClient.call(args[0] ?? '', ...args.slice(1)) as Promise<RedisReply>,
@@ -26,7 +29,7 @@ const userAnalyzeStore = new RedisStore({
 const analyzeLimiter = rateLimit({
   store: analyzeStore,
   windowMs: DAY,
-  max: NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY,
+  max: MAX_REQUESTS,
   message: {
     error: 'The limit of analyses has been reached.'
   },
@@ -45,7 +48,7 @@ const authAttemptLimiter = rateLimit({
 const userAnalyzeLimiter = rateLimit({
   store: userAnalyzeStore,
   windowMs: DAY,
-  max: NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY,
+  max: MAX_REQUESTS,
   message: {
     error: 'The limit of analyses has been reached.'
   },

@@ -17,7 +17,7 @@ export function ResumeAnalyzer() {
     isPending
   } = useAnalyzer()
 
-  if (shouldShowError) {
+  if (!isPending && shouldShowError) {
     return <RequestLimitError />
   }
 
