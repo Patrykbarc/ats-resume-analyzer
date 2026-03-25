@@ -37,7 +37,7 @@ export function SubscriptionDetailsCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {subscriptionStatus == null && (
+        {subscriptionStatus === null && (
           <CardContainer className="bg-muted/50">
             <p className="text-sm">{t('subscription.noActive')}</p>
             <Link

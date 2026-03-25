@@ -1,5 +1,5 @@
 import { fromUnixTime, isAfter, isValid } from 'date-fns'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useLocalStorage } from 'usehooks-ts'
 
 export const useRateLimit = () => {
@@ -30,11 +30,12 @@ export const useRateLimit = () => {
     return isAfter(cooldownDate, new Date())
   }, [cooldownDate])
 
-  if (requestsCooldown && !isCooldownActive) {
-    setRequestsCooldownRaw(null)
-
-    setRequestsLeft(null)
-  }
+  useEffect(() => {
+    if (requestsCooldown && !isCooldownActive) {
+      setRequestsCooldownRaw(null)
+      setRequestsLeft(null)
+    }
+  }, [requestsCooldown, isCooldownActive, setRequestsCooldownRaw, setRequestsLeft])
 
   const setRequestsCooldown = useCallback(
     (value: string | null) => {

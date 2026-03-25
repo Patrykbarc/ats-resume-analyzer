@@ -24,8 +24,10 @@ export const useAnalyzer = () => {
     useRateLimit()
 
   const { mutate, isPending, error, abort } = useAnalyseResumeMutation({
-    onSuccess: (response) => {
+    onJobSubmitted: (response) => {
       updateRequestLimit(response)
+    },
+    onSuccess: (response) => {
       setValidationError(null)
       setMutationError(null)
 
@@ -45,6 +47,7 @@ export const useAnalyzer = () => {
       if (isAxiosError(err) && isRateLimitError(err)) {
         const timestamp = getHeadersRateLimitReset(err.response)
         setRequestsCooldown(timestamp)
+        setRequestsLeft(0)
         sentryLogger.expected(err, { context: 'rate limit during analysis' })
         return
       }

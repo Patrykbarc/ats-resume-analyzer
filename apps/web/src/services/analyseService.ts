@@ -22,12 +22,13 @@ type JobStatusResponse =
   | { status: 'COMPLETED'; result: AnalysisDetails }
 
 const POLL_INTERVAL_MS = 2000
+const MAX_POLL_ATTEMPTS = 60
 
 export const pollJobResult = async (
   jobId: string,
   signal?: AbortSignal
 ): Promise<AnalysisDetails> => {
-  while (true) {
+  for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
     if (signal?.aborted) {
       throw new DOMException('Aborted', 'AbortError')
     }
@@ -55,18 +56,22 @@ export const pollJobResult = async (
       })
     })
   }
+
+  throw new Error('Analysis timed out. Please try again.')
 }
 
 export const submitAnalyseResume = async ({
   file,
   isPremium,
   userId,
-  signal
+  signal,
+  onJobSubmitted
 }: {
   file: File
   isPremium: boolean
   userId?: User['id']
   signal?: AbortSignal
+  onJobSubmitted?: (response: AxiosResponse<{ jobId: string }>) => void
 }): Promise<AnalyseResult> => {
   const formData = new FormData()
   formData.append('file', file)
@@ -93,6 +98,8 @@ export const submitAnalyseResume = async ({
       signal
     }
   )
+
+  onJobSubmitted?.(submitResponse)
 
   const { jobId } = submitResponse.data
   const result = await pollJobResult(jobId, signal)
