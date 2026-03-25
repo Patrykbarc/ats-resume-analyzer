@@ -1,14 +1,20 @@
 import { AnalyseResult, submitAnalyseResume } from '@/services/analyseService'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { useMutation, UseMutationOptions } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
+import { AxiosError, AxiosResponse } from 'axios'
 import { useRef } from 'react'
 
+type AnalyseMutationOptions = UseMutationOptions<AnalyseResult, AxiosError, File> & {
+  onJobSubmitted?: (response: AxiosResponse<{ jobId: string }>) => void
+}
+
 export const useAnalyseResumeMutation = (
-  options?: UseMutationOptions<AnalyseResult, AxiosError, File>
+  options?: AnalyseMutationOptions
 ) => {
   const { isPremium, user } = useSessionStore()
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  const { onJobSubmitted, ...mutationOptions } = options ?? {}
 
   const mutation = useMutation<AnalyseResult, AxiosError, File>({
     mutationFn: (file: File) => {
@@ -17,10 +23,11 @@ export const useAnalyseResumeMutation = (
         file,
         isPremium,
         userId: user?.id,
-        signal: abortControllerRef.current.signal
+        signal: abortControllerRef.current.signal,
+        onJobSubmitted
       })
     },
-    ...options
+    ...mutationOptions
   })
 
   const abort = () => {

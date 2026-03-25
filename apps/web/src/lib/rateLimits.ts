@@ -12,7 +12,7 @@ const getHeadersRateLimitRemaining = (
   response?: AxiosResponse
 ): number | null => {
   const remaining = response?.headers?.['x-ratelimit-remaining']
-  if (!remaining) {
+  if (remaining == null) {
     return null
   }
 

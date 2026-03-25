@@ -1,1 +1,1 @@
-export const FREE_REQUESTS_PER_DAY = 3
+export const FREE_REQUESTS_PER_DAY = 2
