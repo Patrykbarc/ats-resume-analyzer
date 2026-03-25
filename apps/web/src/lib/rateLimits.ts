@@ -1,3 +1,4 @@
+import { HEADERS } from '@monorepo/constants'
 import { AxiosError, AxiosResponse, isAxiosError } from 'axios'
 import { StatusCodes } from 'http-status-codes'
 
@@ -11,7 +12,7 @@ const isRateLimitError = (error: unknown): error is AxiosError => {
 const getHeadersRateLimitRemaining = (
   response?: AxiosResponse
 ): number | null => {
-  const remaining = response?.headers?.['x-ratelimit-remaining']
+  const remaining = response?.headers?.[HEADERS['X-RateLimit-Remaining']]
   if (remaining == null) {
     return null
   }
@@ -21,7 +22,7 @@ const getHeadersRateLimitRemaining = (
 }
 
 const getHeadersRateLimitReset = (response?: AxiosResponse): string | null => {
-  const resetTimestamp = response?.headers?.['x-ratelimit-reset']
+  const resetTimestamp = response?.headers?.[HEADERS['X-RateLimit-Reset']]
   if (!resetTimestamp) {
     return null
   }

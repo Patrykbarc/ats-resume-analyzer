@@ -1,10 +1,7 @@
+import { HEADERS } from '@monorepo/constants'
 import { getEnvs } from '../lib/getEnv'
 
-const exposedHeaders = [
-  'X-RateLimit-Limit',
-  'X-RateLimit-Remaining',
-  'X-RateLimit-Reset'
-]
+const exposedHeaders = [...Object.values(HEADERS)]
 
 const { FRONTEND_URL } = getEnvs()
 

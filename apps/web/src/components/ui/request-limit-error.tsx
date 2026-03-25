@@ -26,7 +26,7 @@ export function RequestLimitError() {
         </h1>
 
         {cooldownDate && (
-          <p className="text-sm text-card-foreground max-w-80 mx-auto">
+          <p className="text-sm text-card-foreground whitespace-pre-line max-w-80 mx-auto">
             {t('rateLimit.renewsAt', { date: formattedDate })}
           </p>
         )}
