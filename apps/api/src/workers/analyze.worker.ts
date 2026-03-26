@@ -114,5 +114,19 @@ export const createAnalyzeWorker = () => {
     logger.error({ jobId: job?.id, err }, 'Analysis job failed unexpectedly')
   })
 
+  worker.on('error', (err) => {
+    logger.error({ err }, 'BullMQ worker connection error')
+  })
+
+  worker.on('stalled', (jobId) => {
+    logger.warn({ jobId }, 'Job stalled — updating DB status to FAILED')
+    prisma.analysisJob
+      .update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error: 'Job interrupted during processing' }
+      })
+      .catch(() => {})
+  })
+
   return worker
 }
