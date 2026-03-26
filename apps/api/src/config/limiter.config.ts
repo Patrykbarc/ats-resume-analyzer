@@ -14,15 +14,23 @@ const { NODE_ENV } = getEnvs()
 const MAX_REQUESTS =
   NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY
 
+const makeSendCommand =
+  (prefix: string) =>
+  (...args: string[]): Promise<RedisReply> =>
+    (
+      redisClient.call(args[0] ?? '', ...args.slice(1)) as Promise<RedisReply>
+    ).catch((err) => {
+      console.error(`[RateLimit:${prefix}] Redis store error:`, err)
+      throw err
+    })
+
 const analyzeStore = new RedisStore({
-  sendCommand: (...args: string[]) =>
-    redisClient.call(args[0] ?? '', ...args.slice(1)) as Promise<RedisReply>,
+  sendCommand: makeSendCommand('rl:analyze'),
   prefix: 'rl:analyze:'
 })
 
 const userAnalyzeStore = new RedisStore({
-  sendCommand: (...args: string[]) =>
-    redisClient.call(args[0] ?? '', ...args.slice(1)) as Promise<RedisReply>,
+  sendCommand: makeSendCommand('rl:user-analyze'),
   prefix: 'rl:user-analyze:'
 })
 
@@ -31,6 +39,7 @@ const analyzeLimiter = rateLimit({
   windowMs: DAY,
   max: MAX_REQUESTS,
   skipFailedRequests: true,
+  passOnStoreError: false,
   message: {
     error: 'The limit of analyses has been reached.'
   },
@@ -51,6 +60,7 @@ const userAnalyzeLimiter = rateLimit({
   windowMs: DAY,
   max: MAX_REQUESTS,
   skipFailedRequests: true,
+  passOnStoreError: false,
   message: {
     error: 'The limit of analyses has been reached.'
   },
