@@ -8,5 +8,8 @@ export const parseFileAndSanitize = async (buffer: Buffer) => {
 
   const textResult = await parser.getText()
 
-  return sanitize(textResult.text)
+  const htmlSanitized = sanitize(textResult.text)
+  return htmlSanitized
+    .replace(/<cv_content>/gi, '[cv_content]')
+    .replace(/<\/cv_content>/gi, '[/cv_content]')
 }
