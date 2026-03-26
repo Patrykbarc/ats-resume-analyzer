@@ -2,8 +2,8 @@ import { UserSchemaType } from '@monorepo/schemas'
 import type { AiAnalysis } from '@monorepo/types'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { promises as fs } from 'node:fs'
 import { randomUUID } from 'node:crypto'
+import { promises as fs } from 'node:fs'
 import { analyzeQueue } from '../config/queue.config'
 import { redisClient } from '../config/redis.config'
 import { logger, openAiClient, prisma } from '../server'
@@ -38,12 +38,14 @@ export const createAnalyze = async (req: Request, res: Response) => {
     })
   }
 
+  let jobId: string | undefined
+
   try {
     const extractedText = await parseFileAndSanitize(buffer)
     const user = req.user as UserSchemaType | undefined
     const isPremium = isPremiumUser(user)
 
-    const jobId = randomUUID()
+    jobId = randomUUID()
 
     await prisma.analysisJob.create({
       data: { id: jobId, userId: user?.id ?? null }
@@ -66,6 +68,11 @@ export const createAnalyze = async (req: Request, res: Response) => {
     return res.status(StatusCodes.ACCEPTED).json({ jobId })
   } catch (error) {
     logger.error({ error }, 'Error creating analysis job')
+
+    if (jobId) {
+      await prisma.analysisJob.delete({ where: { id: jobId } }).catch(() => {})
+    }
+
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: StatusCodes.INTERNAL_SERVER_ERROR,
       error: 'Failed to enqueue analysis.'

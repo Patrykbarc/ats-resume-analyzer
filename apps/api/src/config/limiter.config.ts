@@ -30,6 +30,7 @@ const analyzeLimiter = rateLimit({
   store: analyzeStore,
   windowMs: DAY,
   max: MAX_REQUESTS,
+  skipFailedRequests: true,
   message: {
     error: 'The limit of analyses has been reached.'
   },
@@ -49,6 +50,7 @@ const userAnalyzeLimiter = rateLimit({
   store: userAnalyzeStore,
   windowMs: DAY,
   max: MAX_REQUESTS,
+  skipFailedRequests: true,
   message: {
     error: 'The limit of analyses has been reached.'
   },

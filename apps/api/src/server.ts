@@ -1,4 +1,3 @@
-import './config/sentry.config'
 import { PrismaClient } from '@monorepo/database'
 import axios, { isAxiosError } from 'axios'
 import { StatusCodes } from 'http-status-codes'
@@ -6,6 +5,7 @@ import OpenAI from 'openai'
 import pino from 'pino'
 import app from './app'
 import pinoConfig from './config/pino.config'
+import './config/sentry.config'
 import config from './config/server.config'
 import { getEnvs } from './lib/getEnv'
 import { createAnalyzeWorker } from './workers/analyze.worker'
@@ -19,6 +19,16 @@ export const prisma = new PrismaClient({
 })
 
 app.set('trust proxy', 1)
+
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'Uncaught exception — shutting down')
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (reason) => {
+  logger.fatal({ reason }, 'Unhandled rejection — shutting down')
+  process.exit(1)
+})
 
 const analyzeWorker = createAnalyzeWorker()
 

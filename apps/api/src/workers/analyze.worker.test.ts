@@ -1,6 +1,13 @@
-import { type Job } from 'bullmq'
+import { Worker, type Job } from 'bullmq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { type AnalyzeJobData } from './analyze.worker'
+import { redisClient } from '../config/redis.config'
+import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
+import { logger, prisma } from '../server'
+import {
+  createAnalyzeWorker,
+  processAnalyzeJob,
+  type AnalyzeJobData
+} from './analyze.worker'
 
 vi.mock('../server')
 
@@ -14,12 +21,6 @@ vi.mock('../controllers/helper/analyze/analyzeFile', () => ({
 }))
 
 vi.mock('bullmq', () => ({ Worker: vi.fn() }))
-
-import { Worker } from 'bullmq'
-import { redisClient } from '../config/redis.config'
-import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
-import { logger, prisma } from '../server'
-import { createAnalyzeWorker, processAnalyzeJob } from './analyze.worker'
 
 const makeJob = (overrides: Partial<AnalyzeJobData> = {}) =>
   ({
@@ -232,6 +233,75 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
     await processAnalyzeJob(makeJob())
 
     expect(prisma.analysisJob.update).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('processAnalyzeJob — requestLogs failure does not override COMPLETED', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('job remains COMPLETED when prisma.user.update throws', async () => {
+    vi.mocked(analyzeFile).mockResolvedValue({ id: 'analysis-id' } as never)
+    vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
+    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
+    vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB lost'))
+
+    await processAnalyzeJob(makeJob({ userId: 'user-123' }))
+
+    expect(prisma.analysisJob.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { status: 'COMPLETED', resultId: 'analysis-id' }
+      })
+    )
+    expect(prisma.analysisJob.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'FAILED' })
+      })
+    )
+  })
+
+  it('logs error when requestLogs creation fails', async () => {
+    vi.mocked(analyzeFile).mockResolvedValue({ id: 'analysis-id' } as never)
+    vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
+    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
+    vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB lost'))
+
+    await processAnalyzeJob(makeJob({ userId: 'user-123' }))
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ jobId: 'job-test-id' }),
+      expect.stringContaining('analysis still completed')
+    )
+  })
+})
+
+describe('processAnalyzeJob — unexpected error sets FAILED and re-throws', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('sets status FAILED and re-throws when analyzeFile throws unexpectedly', async () => {
+    vi.mocked(analyzeFile).mockRejectedValue(new Error('Network error'))
+    vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
+
+    await expect(processAnalyzeJob(makeJob())).rejects.toThrow('Network error')
+
+    expect(prisma.analysisJob.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'FAILED' })
+      })
+    )
+  })
+
+  it('sets status FAILED and re-throws when redisClient.setex throws', async () => {
+    vi.mocked(analyzeFile).mockResolvedValue({ id: 'analysis-id' } as never)
+    vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
+    vi.mocked(redisClient.setex).mockRejectedValue(new Error('Redis OOM'))
+
+    await expect(processAnalyzeJob(makeJob())).rejects.toThrow('Redis OOM')
+
+    expect(prisma.analysisJob.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'FAILED' })
+      })
+    )
   })
 })
 

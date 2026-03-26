@@ -1,6 +1,12 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import app from '../app'
+import { analyzeQueue } from '../config/queue.config'
+import { redisClient } from '../config/redis.config'
+import { parseFileAndSanitize } from '../controllers/helper/analyze/parseFileAndSanitize'
+import { parseOpenAiApiResponse } from '../controllers/helper/analyze/parseOpenAiApiResponse'
+import { requireAuth } from '../middleware/require-auth.middleware'
+import { requirePremium } from '../middleware/require-premium.middleware'
 import { openAiClient, prisma } from '../server'
 
 vi.mock('../server')
@@ -48,13 +54,6 @@ vi.mock('../config/redis.config', () => ({
   }
 }))
 
-import { analyzeQueue } from '../config/queue.config'
-import { redisClient } from '../config/redis.config'
-import { parseFileAndSanitize } from '../controllers/helper/analyze/parseFileAndSanitize'
-import { parseOpenAiApiResponse } from '../controllers/helper/analyze/parseOpenAiApiResponse'
-import { requireAuth } from '../middleware/require-auth.middleware'
-import { requirePremium } from '../middleware/require-premium.middleware'
-
 const API_URL = '/api/cv'
 const FAKE_PDF = Buffer.from('%PDF-1.4 fake pdf content for testing')
 const PDF_OPTS = { filename: 'resume.pdf', contentType: 'application/pdf' }
@@ -77,6 +76,26 @@ describe('POST /api/cv/analyze/free', () => {
       .post(`${API_URL}/analyze/free`)
       .attach('file', FAKE_PDF, PDF_OPTS)
     expect(res.statusCode).toBe(500)
+  })
+
+  it('deletes orphaned DB record when queue.add() fails', async () => {
+    const deleteMock = vi.fn().mockResolvedValue(undefined)
+    Object.assign(prisma.analysisJob, { delete: deleteMock })
+
+    vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
+    vi.mocked(prisma.analysisJob.create).mockResolvedValue({
+      id: 'job-123'
+    } as never)
+    vi.mocked(analyzeQueue.add).mockRejectedValue(new Error('Redis down'))
+
+    const res = await request(app)
+      .post(`${API_URL}/analyze/free`)
+      .attach('file', FAKE_PDF, PDF_OPTS)
+
+    expect(res.statusCode).toBe(500)
+    expect(deleteMock).toHaveBeenCalledWith({
+      where: { id: expect.any(String) }
+    })
   })
 
   it('returns 202 with jobId on success', async () => {

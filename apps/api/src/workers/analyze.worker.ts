@@ -27,60 +27,79 @@ export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
   } = job.data
   const jobId = job.id
 
-  await prisma.analysisJob.update({
-    where: { id: jobId },
-    data: { status: 'PROCESSING' }
-  })
-
-  const analysisResult = await analyzeFile(extractedText, {
-    premium: isPremium
-  })
-
-  if ('error' in analysisResult) {
+  try {
     await prisma.analysisJob.update({
       where: { id: jobId },
-      data: { status: 'FAILED', error: analysisResult.error }
+      data: { status: 'PROCESSING' }
     })
-    return
-  }
 
-  const resultData = {
-    ...analysisResult,
-    parsed_file: extractedText,
-    user: userId ? { id: userId } : null
-  }
+    const analysisResult = await analyzeFile(extractedText, {
+      premium: isPremium
+    })
 
-  await redisClient.setex(
-    `result:${jobId}`,
-    RESULT_TTL_SECONDS,
-    JSON.stringify(resultData)
-  )
+    if ('error' in analysisResult) {
+      await prisma.analysisJob.update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error: analysisResult.error }
+      })
+      return
+    }
 
-  await prisma.analysisJob.update({
-    where: { id: jobId },
-    data: { status: 'COMPLETED', resultId: analysisResult.id }
-  })
+    const resultData = {
+      ...analysisResult,
+      parsed_file: extractedText,
+      user: userId ? { id: userId } : null
+    }
 
-  if (userId) {
-    const decodedFileName = fileName
-      ? Buffer.from(fileName, 'latin1').toString('utf8')
-      : null
+    await redisClient.setex(
+      `result:${jobId}`,
+      RESULT_TTL_SECONDS,
+      JSON.stringify(resultData)
+    )
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        requestLogs: {
-          create: {
-            analyseId: analysisResult.id,
-            fileName: decodedFileName,
-            fileSize: fileSize ?? null,
-            isPremiumRequest: isPremium,
-            ipAddress: ipAddress ?? null,
-            userAgent: userAgent ?? null
+    await prisma.analysisJob.update({
+      where: { id: jobId },
+      data: { status: 'COMPLETED', resultId: analysisResult.id }
+    })
+
+    if (userId) {
+      try {
+        const decodedFileName = fileName
+          ? Buffer.from(fileName, 'latin1').toString('utf8')
+          : null
+
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            requestLogs: {
+              create: {
+                analyseId: analysisResult.id,
+                fileName: decodedFileName,
+                fileSize: fileSize ?? null,
+                isPremiumRequest: isPremium,
+                ipAddress: ipAddress ?? null,
+                userAgent: userAgent ?? null
+              }
+            }
           }
-        }
+        })
+      } catch (logError) {
+        logger.error(
+          { jobId, logError },
+          'Failed to create request log — analysis still completed'
+        )
+      }
+    }
+  } catch (error) {
+    logger.error({ jobId, error }, 'Unhandled error in processAnalyzeJob')
+    await prisma.analysisJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'FAILED',
+        error: error instanceof Error ? error.message : 'Unexpected error'
       }
     })
+    throw error
   }
 }
 

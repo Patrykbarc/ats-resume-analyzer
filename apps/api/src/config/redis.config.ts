@@ -7,6 +7,10 @@ export const redisClient = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null
 })
 
+redisClient.on('error', (err) => {
+  console.error('[Redis] Client error:', err)
+})
+
 function parseRedisUrl(url: string) {
   const parsed = new URL(url)
   return {
