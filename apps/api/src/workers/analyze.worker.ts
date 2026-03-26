@@ -27,6 +27,8 @@ export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
   } = job.data
   const jobId = job.id
 
+  logger.info({ jobId }, 'Starting to process job')
+
   try {
     await prisma.analysisJob.update({
       where: { id: jobId },
