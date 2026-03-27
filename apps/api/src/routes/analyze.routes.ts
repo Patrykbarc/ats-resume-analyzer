@@ -7,6 +7,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { analyzeLimiter, userAnalyzeLimiter } from '../config/limiter.config'
 import {
+  cancelJob,
   createAnalyze,
   getAnalysis,
   getAnalysisHistory,
@@ -50,6 +51,7 @@ router.post(
 )
 
 router.get('/analyze/job/:jobId', getJobStatus)
+router.delete('/analyze/job/:jobId', cancelJob)
 
 router.get('/analysis/:id', validateData(AnalysisParamsSchema), getAnalysis)
 router.get(

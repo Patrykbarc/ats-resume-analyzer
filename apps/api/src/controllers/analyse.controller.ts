@@ -191,6 +191,33 @@ export const getParsedFile = async (
   })
 }
 
+export const cancelJob = async (
+  req: Request<{ jobId: string }>,
+  res: Response
+) => {
+  const { jobId } = req.params
+
+  const bullJob = await analyzeQueue.getJob(jobId)
+  if (bullJob) {
+    const state = await bullJob.getState()
+    if (state === 'waiting' || state === 'delayed' || state === 'prioritized') {
+      await bullJob.remove().catch(() => {})
+    }
+  }
+
+  await Promise.all([
+    prisma.analysisJob
+      .update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error: 'Cancelled by user' }
+      })
+      .catch(() => {}),
+    redisClient.del(`result:${jobId}`).catch(() => {})
+  ])
+
+  return res.status(StatusCodes.OK).json({ status: 'cancelled' })
+}
+
 export const getAnalysisHistory = async (
   req: Request<{ id: string }>,
   res: Response
