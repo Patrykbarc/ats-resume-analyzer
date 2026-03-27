@@ -7,6 +7,13 @@ import { parseOpenAiApiResponse } from './parseOpenAiApiResponse'
 
 const PROMPT_VAR = '{{CV_TEXT}}'
 
+const wrapCvText = (text: string): string => {
+  const sanitized = text
+    .replace(/<cv_content>/gi, '[cv_content]')
+    .replace(/<\/cv_content>/gi, '[/cv_content]')
+  return `<cv_content>\n${sanitized}\n</cv_content>`
+}
+
 export type AnalyseApiResponse = { id: string; output_text: string }
 
 type AnalyzeOptions = { premium?: boolean; signal?: AbortSignal }
@@ -31,10 +38,10 @@ export const analyzeFile = async (
               role: 'assistant',
               content: getPrompt('assistant', prompt).replace(
                 PROMPT_VAR,
-                extractedText
+                wrapCvText(extractedText)
               )
             },
-            { role: 'user', content: extractedText }
+            { role: 'user', content: wrapCvText(extractedText) }
           ]
         },
         { signal: options?.signal }
