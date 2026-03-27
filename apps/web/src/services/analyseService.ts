@@ -49,11 +49,15 @@ export const pollJobResult = async (
     }
 
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(resolve, POLL_INTERVAL_MS)
-      signal?.addEventListener('abort', () => {
+      const onAbort = () => {
         clearTimeout(timeout)
         reject(new DOMException('Aborted', 'AbortError'))
-      })
+      }
+      const timeout = setTimeout(() => {
+        signal?.removeEventListener('abort', onAbort)
+        resolve()
+      }, POLL_INTERVAL_MS)
+      signal?.addEventListener('abort', onAbort, { once: true })
     })
   }
 
