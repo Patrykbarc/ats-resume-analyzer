@@ -1,12 +1,10 @@
-import { Skeleton } from '@/components/ui/skeleton'
+import { Analyzer, AnalyzerSkeleton } from '@/components/ui/analyzer'
 import { LATEST_HISTORY_LIMIT } from '@/constants/history-pagination-limits'
 import { useGetAnalysisHistory } from '@/hooks/useGetAnalysisHistory/useGetAnalysisHistory'
-import { useRateLimit } from '@/hooks/useRateLimit'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnalysisHistorySkeleton } from '../latests-analysis-history/components/skeletons/latests-analysis-history-skeleton'
-import { useAnalyzer } from '../resume-analyzer/hooks/useAnalyzer'
 import { Faq } from '../seo/faq'
 import { Features } from '../seo/features'
 
@@ -16,23 +14,11 @@ const LatestsAnalysisHistory = lazy(() =>
   ).then((mod) => ({ default: mod.LatestsAnalysisHistory }))
 )
 
-const RequestLimitError = lazy(() =>
-  import('@/components/ui/request-limit-error').then((mod) => ({
-    default: mod.RequestLimitError
-  }))
-)
 
-const ResumeAnalyzer = lazy(() =>
-  import('@/components/views/resume-analyzer/resume-analyzer').then((mod) => ({
-    default: mod.ResumeAnalyzer
-  }))
-)
 
 export function HomePage() {
-  const analyzer = useAnalyzer()
-  const { requestsLeft } = useRateLimit()
   const { t } = useTranslation('seo')
-  const { user } = useSessionStore()
+  const { user, isLoading } = useSessionStore()
   const { data: history } = useGetAnalysisHistory({
     id: user?.id ?? '',
     limit: LATEST_HISTORY_LIMIT,
@@ -51,15 +37,7 @@ export function HomePage() {
       </header>
 
       <section className="space-y-6">
-        <Suspense
-          fallback={<Skeleton className="mx-auto h-92.5 w-full rounded-md" />}
-        >
-          {requestsLeft === 1 ? (
-            <RequestLimitError />
-          ) : (
-            <ResumeAnalyzer {...analyzer} />
-          )}
-        </Suspense>
+        {isLoading ? <AnalyzerSkeleton /> : <Analyzer />}
 
         {history && history?.data.logs.length > 0 && (
           <Suspense fallback={<AnalysisHistorySkeleton />}>

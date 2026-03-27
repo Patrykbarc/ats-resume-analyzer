@@ -21,7 +21,7 @@ export function AnalyzeFile({
   const { t } = useTranslation('resumeAnalyzer')
   const { isPremium } = useSessionStore()
   const { isCooldownActive, requestsLeft } = useRateLimit()
-  const isLimitReached = requestsLeft === 0 || isCooldownActive
+  const isLimitReached = !isPremium && (requestsLeft === 0 || isCooldownActive)
 
   return (
     <>

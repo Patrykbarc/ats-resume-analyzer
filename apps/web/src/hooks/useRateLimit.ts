@@ -2,14 +2,17 @@ import { fromUnixTime, isAfter, isValid } from 'date-fns'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useLocalStorage } from 'usehooks-ts'
 
+export const REQUESTS_LEFT_KEY = 'requestsLeft'
+export const REQUESTS_COOLDOWN_KEY = 'requestsCooldown'
+
 export const useRateLimit = () => {
   const [requestsLeft, setRequestsLeft] = useLocalStorage<number | null>(
-    'requestsLeft',
+    REQUESTS_LEFT_KEY,
     null
   )
   const [requestsCooldown, setRequestsCooldownRaw] = useLocalStorage<
     string | null
-  >('requestsCooldown', null)
+  >(REQUESTS_COOLDOWN_KEY, null)
 
   const cooldownDate = useMemo(() => {
     if (!requestsCooldown) {
