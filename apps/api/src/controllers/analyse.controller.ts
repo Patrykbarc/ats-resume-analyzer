@@ -16,6 +16,11 @@ import { parseFileAndSanitize } from './helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from './helper/analyze/parseOpenAiApiResponse'
 
 export const createAnalyze = async (req: Request, res: Response) => {
+  logger.debug(
+    { ip: req.ip, forwarded: req.headers['x-forwarded-for'] },
+    'Rate limit key info'
+  )
+
   const file = req.file
 
   if (!file) {
