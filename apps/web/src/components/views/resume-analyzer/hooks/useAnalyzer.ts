@@ -20,8 +20,7 @@ export const useAnalyzer = () => {
   const [file, setFile] = useState<File | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
-  const { setRequestsLeft, setRequestsCooldown, isCooldownActive } =
-    useRateLimit()
+  const { setRequestsLeft, setRequestsCooldown } = useRateLimit()
 
   const { mutate, isPending, error, abort } = useAnalyseResumeMutation({
     onJobSubmitted: (response) => {
@@ -95,18 +94,20 @@ export const useAnalyzer = () => {
       const remaining = getHeadersRateLimitRemaining(response)
       const timestamp = getHeadersRateLimitReset(response)
 
+      setRequestsCooldown(null)
+
       if (remaining !== null) {
         setRequestsLeft(remaining)
       }
 
       if (remaining === 0 && timestamp) {
-        setRequestsCooldown?.(timestamp)
+        setRequestsCooldown(timestamp)
       }
     },
     [setRequestsCooldown, setRequestsLeft]
   )
 
-  const shouldShowError = isRateLimitError(error) || isCooldownActive
+  const shouldShowError = isRateLimitError(error)
 
   return {
     shouldShowError,
