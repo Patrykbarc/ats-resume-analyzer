@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { useRateLimit } from '@/hooks/useRateLimit'
 import { useSessionStore } from '@/stores/session/useSessionStore'
 import { FileSearchIcon, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +20,8 @@ export function AnalyzeFile({
 }: AnalyseFileProps) {
   const { t } = useTranslation('resumeAnalyzer')
   const { isPremium } = useSessionStore()
+  const { isCooldownActive, requestsLeft } = useRateLimit()
+  const isLimitReached = requestsLeft === 0 || isCooldownActive
 
   return (
     <>
@@ -38,7 +41,7 @@ export function AnalyzeFile({
       <div className="flex gap-3">
         <Button
           onClick={handleAnalyse}
-          disabled={analyzing}
+          disabled={analyzing || isLimitReached}
           className="bg-accent text-accent-foreground hover:bg-accent/90"
         >
           {analyzing ? (

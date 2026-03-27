@@ -5,17 +5,28 @@ import { RequestsLeft } from './components/requests-left'
 import { UploadFile } from './components/upload-file'
 import { useAnalyzer } from './hooks/useAnalyzer'
 
-export function ResumeAnalyzer() {
-  const {
-    shouldShowError,
-    file,
-    handleAnalyse,
-    handleFileChange,
-    handleReset,
-    validationError,
-    mutationError,
-    isPending
-  } = useAnalyzer()
+type ResumeAnalyzerProps = ReturnType<typeof useAnalyzer>
+
+export function ResumeAnalyzer({
+  shouldShowError,
+  file,
+  handleAnalyse,
+  handleFileChange,
+  handleReset,
+  validationError,
+  mutationError,
+  isPending
+}: ResumeAnalyzerProps) {
+  // const {
+  //   shouldShowError,
+  //   file,
+  //   handleAnalyse,
+  //   handleFileChange,
+  //   handleReset,
+  //   validationError,
+  //   mutationError,
+  //   isPending
+  // } = useAnalyzer()
 
   if (!isPending && shouldShowError) {
     return <RequestLimitError />

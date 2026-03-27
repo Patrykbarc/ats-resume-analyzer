@@ -12,15 +12,11 @@ export function RequestsLeft() {
     return null
   }
 
-  if (requestsLeft !== 0) {
-    return (
-      <p className="text-center">
-        {t('requestsLeft', {
-          count: requestsLeft ?? FREE_REQUESTS_PER_DAY
-        })}
-      </p>
-    )
-  }
-
-  return null
+  return (
+    <p className="text-center">
+      {t('requestsLeft', {
+        count: requestsLeft ?? FREE_REQUESTS_PER_DAY
+      })}
+    </p>
+  )
 }

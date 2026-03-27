@@ -23,7 +23,7 @@ function parseRedisUrl(url: string) {
       ? { password: decodeURIComponent(parsed.password) }
       : {}),
     ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-    maxRetriesPerRequest: null as null
+    maxRetriesPerRequest: null 
   }
 }
 

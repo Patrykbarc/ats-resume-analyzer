@@ -117,7 +117,8 @@ export const createAnalyzeWorker = () => {
   })
 
   worker.on('error', (err) => {
-    logger.error({ err }, 'BullMQ worker connection error')
+    logger.fatal({ err }, 'BullMQ worker unrecoverable error — exiting')
+    process.exit(1)
   })
 
   worker.on('stalled', (jobId) => {
