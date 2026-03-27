@@ -21,6 +21,7 @@ export const prisma = {
 }
 
 export const logger = {
+  debug: vi.fn(),
   error: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),

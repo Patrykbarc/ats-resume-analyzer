@@ -44,7 +44,7 @@ vi.mock('../controllers/helper/analyze/parseOpenAiApiResponse', () => ({
 }))
 
 vi.mock('../config/queue.config', () => ({
-  analyzeQueue: { add: vi.fn() }
+  analyzeQueue: { add: vi.fn(), getJob: vi.fn() }
 }))
 
 vi.mock('../config/redis.config', () => ({
