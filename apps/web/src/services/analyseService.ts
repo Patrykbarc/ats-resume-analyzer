@@ -102,9 +102,18 @@ export const submitAnalyseResume = async ({
   onJobSubmitted?.(submitResponse)
 
   const { jobId } = submitResponse.data
-  const result = await pollJobResult(jobId, signal)
 
-  return { ...submitResponse, data: result }
+  const handleAbort = () => {
+    apiClient.delete(`/cv/analyze/job/${jobId}`).catch(() => {})
+  }
+  signal?.addEventListener('abort', handleAbort, { once: true })
+
+  try {
+    const result = await pollJobResult(jobId, signal)
+    return { ...submitResponse, data: result }
+  } finally {
+    signal?.removeEventListener('abort', handleAbort)
+  }
 }
 
 export const getAnalysis = async (id: string) => {
