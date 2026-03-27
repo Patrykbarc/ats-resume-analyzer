@@ -47,6 +47,7 @@ export const useSessionStore = create(
       clearToken()
       set({
         user: null,
+        authToken: null,
         isUserLoggedIn: false,
         isPremium: false
       })

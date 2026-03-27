@@ -22,7 +22,7 @@ export const useAnalyzer = () => {
   const [mutationError, setMutationError] = useState<string | null>(null)
   const { setRequestsLeft, setRequestsCooldown } = useRateLimit()
 
-  const { mutate, isPending, error, abort } = useAnalyseResumeMutation({
+  const { mutate, isPending, abort } = useAnalyseResumeMutation({
     onJobSubmitted: (response) => {
       updateRequestLimit(response)
     },
@@ -107,10 +107,7 @@ export const useAnalyzer = () => {
     [setRequestsCooldown, setRequestsLeft]
   )
 
-  const shouldShowError = isRateLimitError(error)
-
   return {
-    shouldShowError,
     file,
     handleAnalyse,
     handleFileChange,

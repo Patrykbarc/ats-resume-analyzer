@@ -1,26 +1,20 @@
 import { Card } from '@/components/ui/card'
-import { RequestLimitError } from '../../ui/request-limit-error'
 import { AnalyzeFile } from './components/analyze-file'
 import { RequestsLeft } from './components/requests-left'
 import { UploadFile } from './components/upload-file'
 import { useAnalyzer } from './hooks/useAnalyzer'
 
-export function ResumeAnalyzer() {
-  const {
-    shouldShowError,
-    file,
-    handleAnalyse,
-    handleFileChange,
-    handleReset,
-    validationError,
-    mutationError,
-    isPending
-  } = useAnalyzer()
+type ResumeAnalyzerProps = ReturnType<typeof useAnalyzer>
 
-  if (!isPending && shouldShowError) {
-    return <RequestLimitError />
-  }
-
+export function ResumeAnalyzer({
+  file,
+  handleAnalyse,
+  handleFileChange,
+  handleReset,
+  validationError,
+  mutationError,
+  isPending
+}: ResumeAnalyzerProps) {
   return (
     <div className="space-y-8">
       <Card className="border-border bg-card p-8">

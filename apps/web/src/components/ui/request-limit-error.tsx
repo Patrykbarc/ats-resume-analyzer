@@ -13,7 +13,7 @@ export function RequestLimitError() {
   const formattedDate = format(cooldownDate ? cooldownDate : new Date(), 'PPp')
 
   return (
-    <div className="w-full mx-auto max-w-md space-y-8 rounded-lg border border-border bg-card p-8 text-center">
+    <div className="w-full mx-auto space-y-8 rounded-lg border border-border bg-card p-8 text-center">
       <div className="flex justify-center">
         <div className="rounded-full bg-destructive/10 p-4">
           <AlertCircle className="h-8 w-8 text-destructive" />

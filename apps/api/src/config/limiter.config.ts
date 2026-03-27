@@ -1,7 +1,6 @@
 import { FREE_REQUESTS_PER_DAY } from '@monorepo/constants'
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { RedisStore } from 'rate-limit-redis'
-import { getEnvs } from '../lib/getEnv'
 import { redisClient } from './redis.config'
 
 type RedisReply = boolean | number | string | (boolean | number | string)[]
@@ -9,10 +8,7 @@ type RedisReply = boolean | number | string | (boolean | number | string)[]
 const THIRTY_SECONDS_IN_MS = 30 * 1000
 const DAY = 24 * 60 * 60 * 1000
 
-const { NODE_ENV } = getEnvs()
-
-const MAX_REQUESTS =
-  NODE_ENV === 'development' ? Infinity : FREE_REQUESTS_PER_DAY
+const MAX_REQUESTS = FREE_REQUESTS_PER_DAY
 
 const makeSendCommand =
   (prefix: string) =>
