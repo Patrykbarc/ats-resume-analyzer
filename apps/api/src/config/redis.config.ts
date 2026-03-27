@@ -24,7 +24,8 @@ function parseRedisUrl(url: string) {
       : {}),
     ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
     maxRetriesPerRequest: null,
-    enableReadyCheck: false
+    enableReadyCheck: false,
+    keepAlive: 10000
   }
 }
 
