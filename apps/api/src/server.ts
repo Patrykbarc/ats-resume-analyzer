@@ -17,7 +17,7 @@ export const prisma = new PrismaClient({
   datasourceUrl: DATABASE_URL
 })
 
-app.set('trust proxy', 'loopback, linklocal, uniquelocal')
+app.set('trust proxy', 1)
 
 process.on('uncaughtException', (err) => {
   logger.fatal({ err }, 'Uncaught exception — shutting down')

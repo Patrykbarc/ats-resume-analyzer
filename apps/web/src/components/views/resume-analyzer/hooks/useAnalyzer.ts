@@ -96,12 +96,13 @@ export const useAnalyzer = () => {
     (response: AxiosResponse) => {
       const remaining = getHeadersRateLimitRemaining(response)
       const timestamp = getHeadersRateLimitReset(response)
-      const newCooldown = remaining === 0 && timestamp ? timestamp : null
 
       if (remaining !== null) {
         setRequestsLeft(remaining)
       }
-      setRequestsCooldown(newCooldown)
+      if (remaining === 0 && timestamp) {
+        setRequestsCooldown(timestamp)
+      }
     },
     [setRequestsCooldown, setRequestsLeft]
   )
