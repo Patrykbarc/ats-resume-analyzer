@@ -1,13 +1,13 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import app from '../app'
-import { analyzeQueue } from '../config/queue.config'
 import { redisClient } from '../config/redis.config'
 import { parseFileAndSanitize } from '../controllers/helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from '../controllers/helper/analyze/parseOpenAiApiResponse'
 import { requireAuth } from '../middleware/require-auth.middleware'
 import { requirePremium } from '../middleware/require-premium.middleware'
 import { openAiClient, prisma } from '../server'
+import { processAnalyzeJob } from '../workers/analyze.worker'
 
 vi.mock('../server')
 
@@ -43,8 +43,8 @@ vi.mock('../controllers/helper/analyze/parseOpenAiApiResponse', () => ({
   parseOpenAiApiResponse: vi.fn()
 }))
 
-vi.mock('../config/queue.config', () => ({
-  analyzeQueue: { add: vi.fn(), getJob: vi.fn() }
+vi.mock('../workers/analyze.worker', () => ({
+  processAnalyzeJob: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('../config/redis.config', () => ({
@@ -78,32 +78,12 @@ describe('POST /api/cv/analyze/free', () => {
     expect(res.statusCode).toBe(500)
   })
 
-  it('deletes orphaned DB record when queue.add() fails', async () => {
-    const deleteMock = vi.fn().mockResolvedValue(undefined)
-    Object.assign(prisma.analysisJob, { delete: deleteMock })
-
-    vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
-    vi.mocked(prisma.analysisJob.create).mockResolvedValue({
-      id: 'job-123'
-    } as never)
-    vi.mocked(analyzeQueue.add).mockRejectedValue(new Error('Redis down'))
-
-    const res = await request(app)
-      .post(`${API_URL}/analyze/free`)
-      .attach('file', FAKE_PDF, PDF_OPTS)
-
-    expect(res.statusCode).toBe(500)
-    expect(deleteMock).toHaveBeenCalledWith({
-      where: { id: expect.any(String) }
-    })
-  })
-
   it('returns 202 with jobId on success', async () => {
     vi.mocked(parseFileAndSanitize).mockResolvedValue('parsed text' as never)
     vi.mocked(prisma.analysisJob.create).mockResolvedValue({
       id: 'job-123'
     } as never)
-    vi.mocked(analyzeQueue.add).mockResolvedValue(undefined as never)
+    vi.mocked(processAnalyzeJob).mockResolvedValue(undefined)
 
     const res = await request(app)
       .post(`${API_URL}/analyze/free`)
@@ -151,7 +131,7 @@ describe('POST /api/cv/analyze/signed-in', () => {
     vi.mocked(prisma.analysisJob.create).mockResolvedValue({
       id: 'job-456'
     } as never)
-    vi.mocked(analyzeQueue.add).mockResolvedValue(undefined as never)
+    vi.mocked(processAnalyzeJob).mockResolvedValue(undefined)
 
     const res = await request(app)
       .post(`${API_URL}/analyze/signed-in`)
@@ -209,7 +189,7 @@ describe('POST /api/cv/analyze/premium', () => {
     vi.mocked(prisma.analysisJob.create).mockResolvedValue({
       id: 'job-789'
     } as never)
-    vi.mocked(analyzeQueue.add).mockResolvedValue(undefined as never)
+    vi.mocked(processAnalyzeJob).mockResolvedValue(undefined)
 
     const res = await request(app)
       .post(`${API_URL}/analyze/premium`)

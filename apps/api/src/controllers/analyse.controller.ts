@@ -4,13 +4,13 @@ import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
-import { analyzeQueue } from '../config/queue.config'
 import { redisClient } from '../config/redis.config'
 import { logger, openAiClient, prisma } from '../server'
 import {
   getAnalysisHistory as getAnalysisHistoryService,
   getAnalysisOwner
 } from '../services/analyse.service'
+import { AnalyzeJobData, processAnalyzeJob } from '../workers/analyze.worker'
 import { isPremiumUser } from './helper/analyze/isPremiumUser'
 import { parseFileAndSanitize } from './helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from './helper/analyze/parseOpenAiApiResponse'
@@ -56,19 +56,19 @@ export const createAnalyze = async (req: Request, res: Response) => {
       data: { id: jobId, userId: user?.id ?? null }
     })
 
-    await analyzeQueue.add(
-      'analyze',
-      {
-        extractedText,
-        isPremium,
-        userId: user?.id ?? null,
-        fileName: file.originalname,
-        fileSize: file.size,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
-      },
-      { jobId }
-    )
+    const jobData: AnalyzeJobData = {
+      extractedText,
+      isPremium,
+      userId: user?.id ?? null,
+      fileName: file.originalname,
+      fileSize: file.size,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    }
+
+    processAnalyzeJob(jobId, jobData).catch((err) => {
+      logger.error({ err, jobId }, 'Unhandled error in processAnalyzeJob')
+    })
 
     return res.status(StatusCodes.ACCEPTED).json({ jobId })
   } catch (error) {
@@ -80,7 +80,7 @@ export const createAnalyze = async (req: Request, res: Response) => {
 
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: StatusCodes.INTERNAL_SERVER_ERROR,
-      error: 'Failed to enqueue analysis.'
+      error: 'Failed to start analysis.'
     })
   }
 }
@@ -90,6 +90,8 @@ export const getJobStatus = async (
   res: Response
 ) => {
   const { jobId } = req.params
+
+  res.setHeader('Cache-Control', 'no-store')
 
   const job = await prisma.analysisJob.findUnique({ where: { id: jobId } })
 
@@ -201,14 +203,6 @@ export const cancelJob = async (
   res: Response
 ) => {
   const { jobId } = req.params
-
-  const bullJob = await analyzeQueue.getJob(jobId)
-  if (bullJob) {
-    const state = await bullJob.getState()
-    if (state === 'waiting' || state === 'delayed' || state === 'prioritized') {
-      await bullJob.remove().catch(() => {})
-    }
-  }
 
   await Promise.all([
     prisma.analysisJob

@@ -1,41 +1,31 @@
-import { Worker, type Job } from 'bullmq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { redisClient } from '../config/redis.config'
 import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
 import { logger, prisma } from '../server'
-import {
-  createAnalyzeWorker,
-  processAnalyzeJob,
-  type AnalyzeJobData
-} from './analyze.worker'
+import { processAnalyzeJob, type AnalyzeJobData } from './analyze.worker'
 
 vi.mock('../server')
 
 vi.mock('../config/redis.config', () => ({
-  redisClient: { get: vi.fn(), del: vi.fn(), setex: vi.fn() },
-  bullMqConnectionOptions: {}
+  redisClient: { get: vi.fn(), del: vi.fn(), setex: vi.fn() }
 }))
 
 vi.mock('../controllers/helper/analyze/analyzeFile', () => ({
   analyzeFile: vi.fn()
 }))
 
-vi.mock('bullmq', () => ({ Worker: vi.fn() }))
-
-const makeJob = (overrides: Partial<AnalyzeJobData> = {}) =>
-  ({
-    id: 'job-test-id',
-    data: {
-      extractedText: 'Resume text here',
-      isPremium: false,
-      userId: null,
-      fileName: undefined,
-      fileSize: undefined,
-      ipAddress: undefined,
-      userAgent: undefined,
-      ...overrides
-    }
-  }) as unknown as Job<AnalyzeJobData>
+const makeJobData = (
+  overrides: Partial<AnalyzeJobData> = {}
+): AnalyzeJobData => ({
+  extractedText: 'Resume text here',
+  isPremium: false,
+  userId: null,
+  fileName: undefined,
+  fileSize: undefined,
+  ipAddress: undefined,
+  userAgent: undefined,
+  ...overrides
+})
 
 describe('processAnalyzeJob — success (anonymous)', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -46,7 +36,7 @@ describe('processAnalyzeJob — success (anonymous)', () => {
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
-    await processAnalyzeJob(makeJob())
+    await processAnalyzeJob('job-test-id', makeJobData())
 
     expect(prisma.analysisJob.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'job-test-id' },
@@ -64,7 +54,7 @@ describe('processAnalyzeJob — success (anonymous)', () => {
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
-    await processAnalyzeJob(makeJob({ isPremium: true }))
+    await processAnalyzeJob('job-test-id', makeJobData({ isPremium: true }))
 
     expect(analyzeFile).toHaveBeenCalledWith('Resume text here', {
       premium: true
@@ -77,7 +67,7 @@ describe('processAnalyzeJob — success (anonymous)', () => {
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
-    await processAnalyzeJob(makeJob())
+    await processAnalyzeJob('job-test-id', makeJobData())
 
     expect(redisClient.setex).toHaveBeenCalledWith(
       'result:job-test-id',
@@ -96,7 +86,7 @@ describe('processAnalyzeJob — success (anonymous)', () => {
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
-    await processAnalyzeJob(makeJob({ userId: null }))
+    await processAnalyzeJob('job-test-id', makeJobData({ userId: null }))
 
     expect(prisma.user.update).not.toHaveBeenCalled()
   })
@@ -113,7 +103,8 @@ describe('processAnalyzeJob — success (authenticated)', () => {
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
     await processAnalyzeJob(
-      makeJob({
+      'job-test-id',
+      makeJobData({
         userId: 'user-123',
         fileName: 'resume.pdf',
         fileSize: 1024,
@@ -147,7 +138,7 @@ describe('processAnalyzeJob — success (authenticated)', () => {
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
-    await processAnalyzeJob(makeJob({ userId: 'user-123' }))
+    await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
 
     const stored = JSON.parse(
       vi.mocked(redisClient.setex).mock.calls[0][2] as string
@@ -166,7 +157,8 @@ describe('processAnalyzeJob — success (authenticated)', () => {
     const latin1Encoded = Buffer.from('résumé', 'utf8').toString('latin1')
 
     await processAnalyzeJob(
-      makeJob({ userId: 'user-123', fileName: latin1Encoded })
+      'job-test-id',
+      makeJobData({ userId: 'user-123', fileName: latin1Encoded })
     )
 
     const call = vi.mocked(prisma.user.update).mock.calls[0][0] as {
@@ -183,7 +175,8 @@ describe('processAnalyzeJob — success (authenticated)', () => {
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
     await processAnalyzeJob(
-      makeJob({ userId: 'user-123', fileName: undefined })
+      'job-test-id',
+      makeJobData({ userId: 'user-123', fileName: undefined })
     )
 
     const call = vi.mocked(prisma.user.update).mock.calls[0][0] as {
@@ -200,7 +193,7 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
     vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
 
-    await processAnalyzeJob(makeJob())
+    await processAnalyzeJob('job-test-id', makeJobData())
 
     expect(prisma.analysisJob.update).toHaveBeenNthCalledWith(2, {
       where: { id: 'job-test-id' },
@@ -212,7 +205,7 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
     vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
 
-    await processAnalyzeJob(makeJob())
+    await processAnalyzeJob('job-test-id', makeJobData())
 
     expect(redisClient.setex).not.toHaveBeenCalled()
   })
@@ -221,7 +214,7 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
     vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
 
-    await processAnalyzeJob(makeJob({ userId: 'user-123' }))
+    await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
 
     expect(prisma.user.update).not.toHaveBeenCalled()
   })
@@ -230,7 +223,7 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
     vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
 
-    await processAnalyzeJob(makeJob())
+    await processAnalyzeJob('job-test-id', makeJobData())
 
     expect(prisma.analysisJob.update).toHaveBeenCalledTimes(2)
   })
@@ -245,7 +238,7 @@ describe('processAnalyzeJob — requestLogs failure does not override COMPLETED'
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB lost'))
 
-    await processAnalyzeJob(makeJob({ userId: 'user-123' }))
+    await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
 
     expect(prisma.analysisJob.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -265,7 +258,7 @@ describe('processAnalyzeJob — requestLogs failure does not override COMPLETED'
     vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB lost'))
 
-    await processAnalyzeJob(makeJob({ userId: 'user-123' }))
+    await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ jobId: 'job-test-id' }),
@@ -281,7 +274,9 @@ describe('processAnalyzeJob — unexpected error sets FAILED and re-throws', () 
     vi.mocked(analyzeFile).mockRejectedValue(new Error('Network error'))
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
 
-    await expect(processAnalyzeJob(makeJob())).rejects.toThrow('Network error')
+    await expect(
+      processAnalyzeJob('job-test-id', makeJobData())
+    ).rejects.toThrow('Network error')
 
     expect(prisma.analysisJob.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -295,100 +290,14 @@ describe('processAnalyzeJob — unexpected error sets FAILED and re-throws', () 
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
     vi.mocked(redisClient.setex).mockRejectedValue(new Error('Redis OOM'))
 
-    await expect(processAnalyzeJob(makeJob())).rejects.toThrow('Redis OOM')
+    await expect(
+      processAnalyzeJob('job-test-id', makeJobData())
+    ).rejects.toThrow('Redis OOM')
 
     expect(prisma.analysisJob.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: 'FAILED' })
       })
     )
-  })
-})
-
-describe('createAnalyzeWorker — initialisation', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  it('calls Worker constructor with correct queue name, processor, and options', () => {
-    vi.mocked(Worker).mockImplementation(
-      () => ({ on: vi.fn() }) as unknown as InstanceType<typeof Worker>
-    )
-
-    createAnalyzeWorker()
-
-    expect(Worker).toHaveBeenCalledWith('analyze', processAnalyzeJob, {
-      connection: {},
-      removeOnComplete: { count: 100 },
-      removeOnFail: { count: 100 }
-    })
-  })
-
-  it('returns the worker instance from the constructor', () => {
-    const fakeWorker = { on: vi.fn() }
-    vi.mocked(Worker).mockImplementation(
-      () => fakeWorker as unknown as InstanceType<typeof Worker>
-    )
-
-    const result = createAnalyzeWorker()
-
-    expect(result).toBe(fakeWorker)
-  })
-})
-
-describe('createAnalyzeWorker — failed event listener', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  it('registers a "failed" event handler on the worker', () => {
-    const fakeWorker = { on: vi.fn() }
-    vi.mocked(Worker).mockImplementation(
-      () => fakeWorker as unknown as InstanceType<typeof Worker>
-    )
-
-    createAnalyzeWorker()
-
-    expect(fakeWorker.on).toHaveBeenCalledWith('failed', expect.any(Function))
-  })
-
-  it('handler calls logger.error with jobId and err', () => {
-    let capturedHandler:
-      | ((job: { id: string } | undefined, err: Error) => void)
-      | undefined
-    const fakeWorker = {
-      on: vi.fn((event, handler) => {
-        if (event === 'failed') {
-          capturedHandler = handler
-        }
-      })
-    }
-    vi.mocked(Worker).mockImplementation(
-      () => fakeWorker as unknown as InstanceType<typeof Worker>
-    )
-
-    createAnalyzeWorker()
-
-    const err = new Error('boom')
-    capturedHandler?.({ id: 'job-abc' }, err)
-
-    expect(logger.error).toHaveBeenCalledWith(
-      { jobId: 'job-abc', err },
-      'Analysis job failed unexpectedly'
-    )
-  })
-
-  it('handler does not throw when job is undefined', () => {
-    let capturedHandler: ((job: undefined, err: Error) => void) | undefined
-    const fakeWorker = {
-      on: vi.fn((event, handler) => {
-        if (event === 'failed') {
-          capturedHandler = handler
-        }
-      })
-    }
-    vi.mocked(Worker).mockImplementation(
-      () => fakeWorker as unknown as InstanceType<typeof Worker>
-    )
-
-    createAnalyzeWorker()
-
-    expect(() => capturedHandler?.(undefined, new Error('boom'))).not.toThrow()
   })
 })

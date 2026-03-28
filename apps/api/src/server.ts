@@ -8,7 +8,6 @@ import pinoConfig from './config/pino.config'
 import './config/sentry.config'
 import config from './config/server.config'
 import { getEnvs } from './lib/getEnv'
-import { createAnalyzeWorker } from './workers/analyze.worker'
 
 const { OPENAI_API_KEY, DATABASE_URL } = getEnvs()
 
@@ -29,8 +28,6 @@ process.on('unhandledRejection', (reason) => {
   logger.fatal({ reason }, 'Unhandled rejection — shutting down')
   process.exit(1)
 })
-
-const analyzeWorker = createAnalyzeWorker()
 
 const server = app.listen(config.port, async () => {
   const apiUrl = `http://localhost:${config.port}`
@@ -67,8 +64,6 @@ const gracefulShutdown = async (signal: string) => {
     logger.info('HTTP server closed')
 
     try {
-      await analyzeWorker.close()
-      logger.info('Worker closed')
       await prisma.$disconnect()
       logger.info('Database connection closed')
       process.exit(0)

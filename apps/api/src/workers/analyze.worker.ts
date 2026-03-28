@@ -1,5 +1,4 @@
-import { Worker, type Job } from 'bullmq'
-import { bullMqConnectionOptions, redisClient } from '../config/redis.config'
+import { redisClient } from '../config/redis.config'
 import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
 import { logger, prisma } from '../server'
 
@@ -15,7 +14,7 @@ export type AnalyzeJobData = {
 
 const RESULT_TTL_SECONDS = 60 * 60
 
-export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
+export async function processAnalyzeJob(jobId: string, data: AnalyzeJobData) {
   const {
     extractedText,
     isPremium,
@@ -24,8 +23,7 @@ export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
     fileSize,
     ipAddress,
     userAgent
-  } = job.data
-  const jobId = job.id
+  } = data
 
   logger.info({ jobId }, 'Starting to process job')
 
@@ -103,33 +101,4 @@ export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
     })
     throw error
   }
-}
-
-export const createAnalyzeWorker = () => {
-  const worker = new Worker<AnalyzeJobData>('analyze', processAnalyzeJob, {
-    connection: bullMqConnectionOptions,
-    removeOnComplete: { count: 100 },
-    removeOnFail: { count: 100 }
-  })
-
-  worker.on('failed', (job, err) => {
-    logger.error({ jobId: job?.id, err }, 'Analysis job failed unexpectedly')
-  })
-
-  worker.on('error', (err) => {
-    logger.fatal({ err }, 'BullMQ worker unrecoverable error — exiting')
-    process.exit(1)
-  })
-
-  worker.on('stalled', (jobId) => {
-    logger.warn({ jobId }, 'Job stalled — updating DB status to FAILED')
-    prisma.analysisJob
-      .update({
-        where: { id: jobId },
-        data: { status: 'FAILED', error: 'Job interrupted during processing' }
-      })
-      .catch(() => {})
-  })
-
-  return worker
 }
