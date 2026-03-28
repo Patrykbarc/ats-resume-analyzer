@@ -34,10 +34,14 @@ export const useRateLimit = () => {
   }, [cooldownDate])
 
   useEffect(() => {
-    if (requestsCooldown && !isCooldownActive) {
-      setRequestsCooldownRaw(null)
-      setRequestsLeft(null)
+    if (!requestsCooldown) {
+      return
     }
+    if (isCooldownActive) {
+      return
+    }
+    setRequestsCooldownRaw(null)
+    setRequestsLeft(null)
   }, [
     requestsCooldown,
     isCooldownActive,

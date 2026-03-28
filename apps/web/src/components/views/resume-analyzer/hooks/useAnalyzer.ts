@@ -45,7 +45,10 @@ export const useAnalyzer = () => {
 
       if (isAxiosError(err) && isRateLimitError(err)) {
         const timestamp = getHeadersRateLimitReset(err.response)
-        setRequestsCooldown(timestamp)
+        const cooldown =
+          timestamp ??
+          String(Math.ceil((Date.now() + 24 * 60 * 60 * 1000) / 1000))
+        setRequestsCooldown(cooldown)
         setRequestsLeft(0)
         sentryLogger.expected(err, { context: 'rate limit during analysis' })
         return
@@ -93,16 +96,12 @@ export const useAnalyzer = () => {
     (response: AxiosResponse) => {
       const remaining = getHeadersRateLimitRemaining(response)
       const timestamp = getHeadersRateLimitReset(response)
-
-      setRequestsCooldown(null)
+      const newCooldown = remaining === 0 && timestamp ? timestamp : null
 
       if (remaining !== null) {
         setRequestsLeft(remaining)
       }
-
-      if (remaining === 0 && timestamp) {
-        setRequestsCooldown(timestamp)
-      }
+      setRequestsCooldown(newCooldown)
     },
     [setRequestsCooldown, setRequestsLeft]
   )

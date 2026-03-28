@@ -108,7 +108,7 @@ export async function processAnalyzeJob(job: Job<AnalyzeJobData>) {
 export const createAnalyzeWorker = () => {
   const worker = new Worker<AnalyzeJobData>('analyze', processAnalyzeJob, {
     connection: bullMqConnectionOptions,
-    removeOnComplete: { count: 0 },
+    removeOnComplete: { count: 100 },
     removeOnFail: { count: 100 }
   })
 

@@ -33,8 +33,9 @@ const userAnalyzeStore = new RedisStore({
 const analyzeLimiter = rateLimit({
   store: analyzeStore,
   windowMs: DAY,
-  max: MAX_REQUESTS,
-  skipFailedRequests: true,
+  limit: MAX_REQUESTS,
+  legacyHeaders: true,
+  standardHeaders: false,
   passOnStoreError: false,
   message: {
     error: 'The limit of analyses has been reached.'
@@ -44,7 +45,7 @@ const analyzeLimiter = rateLimit({
 
 const authAttemptLimiter = rateLimit({
   windowMs: THIRTY_SECONDS_IN_MS,
-  max: 5,
+  limit: 5,
   message: {
     error: 'Too many attempts, please try again later.'
   },
@@ -54,8 +55,9 @@ const authAttemptLimiter = rateLimit({
 const userAnalyzeLimiter = rateLimit({
   store: userAnalyzeStore,
   windowMs: DAY,
-  max: MAX_REQUESTS,
-  skipFailedRequests: true,
+  limit: MAX_REQUESTS,
+  legacyHeaders: true,
+  standardHeaders: false,
   passOnStoreError: false,
   message: {
     error: 'The limit of analyses has been reached.'
