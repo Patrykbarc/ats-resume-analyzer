@@ -67,13 +67,26 @@ const makeAnalyzeLimiter =
     }
   }
 
+function getClientIp(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for']
+
+  if (forwarded) {
+    const first = Array.isArray(forwarded)
+      ? forwarded[0]
+      : forwarded.split(',')[0]
+    return first.trim()
+  }
+
+  return req.ip ?? 'unknown'
+}
+
 export const analyzeLimiter = makeAnalyzeLimiter(
-  (req) => `free:${req.ip ?? 'unknown'}`
+  (req) => `free:${getClientIp(req)}`
 )
 
 export const userAnalyzeLimiter = makeAnalyzeLimiter((req) => {
   const user = req.user as { id?: string } | undefined
-  return `user:${user?.id ?? req.ip ?? 'unknown'}`
+  return `user:${user?.id ?? getClientIp(req)}`
 })
 
 export const authAttemptLimiter = rateLimit({

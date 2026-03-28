@@ -71,7 +71,7 @@ model User {
   subscriptionStatus           SubscriptionStatus?
   subscriptionStartedAt        DateTime?
   subscriptionCurrentPeriodEnd DateTime?
-  cancelAtPeriodEnd           Boolean             @default(false)
+  cancelAtPeriodEnd            Boolean             @default(false)
 
   refreshToken String?      @unique
   requestLogs  RequestLog[]
@@ -93,9 +93,7 @@ model CronLog {
 }
 
 model RateLimit {
-  key      String   @id
-  count    Int      @default(1)
-  resetAt  DateTime
-
-  @@map("rate_limits")
+  key     String   @id
+  count   Int      @default(1)
+  resetAt DateTime
 }
