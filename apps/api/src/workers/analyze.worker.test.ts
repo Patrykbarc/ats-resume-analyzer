@@ -317,7 +317,7 @@ describe('createAnalyzeWorker — initialisation', () => {
 
     expect(Worker).toHaveBeenCalledWith('analyze', processAnalyzeJob, {
       connection: {},
-      removeOnComplete: { count: 0 },
+      removeOnComplete: { count: 100 },
       removeOnFail: { count: 100 }
     })
   })
