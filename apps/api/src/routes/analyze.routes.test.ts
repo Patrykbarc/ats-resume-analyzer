@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import app from '../app'
-import { redisClient } from '../config/redis.config'
+import { jobResults } from '../config/job-results'
 import { parseFileAndSanitize } from '../controllers/helper/analyze/parseFileAndSanitize'
 import { parseOpenAiApiResponse } from '../controllers/helper/analyze/parseOpenAiApiResponse'
 import { requireAuth } from '../middleware/require-auth.middleware'
@@ -45,13 +45,6 @@ vi.mock('../controllers/helper/analyze/parseOpenAiApiResponse', () => ({
 
 vi.mock('../workers/analyze.worker', () => ({
   processAnalyzeJob: vi.fn().mockResolvedValue(undefined)
-}))
-
-vi.mock('../config/redis.config', () => ({
-  redisClient: {
-    get: vi.fn(),
-    del: vi.fn()
-  }
 }))
 
 const API_URL = '/api/cv'
@@ -200,7 +193,10 @@ describe('POST /api/cv/analyze/premium', () => {
 })
 
 describe('GET /api/cv/analyze/job/:jobId', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    jobResults.clear()
+  })
 
   it('returns 404 when job not found', async () => {
     vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue(null as never)
@@ -246,7 +242,7 @@ describe('GET /api/cv/analyze/job/:jobId', () => {
     })
   })
 
-  it('returns 200 with status COMPLETED and result from Redis', async () => {
+  it('returns 200 with status COMPLETED and result from memory', async () => {
     const mockResult = {
       score: 95,
       parsed_file: 'resume text',
@@ -256,22 +252,18 @@ describe('GET /api/cv/analyze/job/:jobId', () => {
       id: 'job-1',
       status: 'COMPLETED'
     } as never)
-    vi.mocked(redisClient.get).mockResolvedValue(
-      JSON.stringify(mockResult) as never
-    )
-    vi.mocked(redisClient.del).mockResolvedValue(1 as never)
+    jobResults.set('job-1', mockResult as never)
 
     const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
     expect(res.statusCode).toBe(200)
     expect(res.body).toMatchObject({ status: 'COMPLETED', result: mockResult })
   })
 
-  it('returns 404 when completed but result expired in Redis', async () => {
+  it('returns 404 when completed but result not in memory', async () => {
     vi.mocked(prisma.analysisJob.findUnique).mockResolvedValue({
       id: 'job-1',
       status: 'COMPLETED'
     } as never)
-    vi.mocked(redisClient.get).mockResolvedValue(null as never)
 
     const res = await request(app).get(`${API_URL}/analyze/job/job-1`)
     expect(res.statusCode).toBe(404)

@@ -17,7 +17,19 @@ export const prisma = {
     create: vi.fn(),
     findUnique: vi.fn(),
     update: vi.fn()
-  }
+  },
+  rateLimit: {
+    findUnique: vi.fn(),
+    upsert: vi.fn(),
+    update: vi.fn()
+  },
+  $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn({
+    rateLimit: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+      update: vi.fn()
+    }
+  }))
 }
 
 export const logger = {
