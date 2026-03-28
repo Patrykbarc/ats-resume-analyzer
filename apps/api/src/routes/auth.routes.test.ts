@@ -30,12 +30,7 @@ vi.mock('jsonwebtoken', () => ({
 vi.mock('../lib/getEnv')
 
 vi.mock('../config/redis.config', () => ({
-  redisClient: { get: vi.fn(), del: vi.fn() },
-  bullMqConnectionOptions: {}
-}))
-
-vi.mock('../config/queue.config', () => ({
-  analyzeQueue: { add: vi.fn() }
+  redisClient: { get: vi.fn(), del: vi.fn() }
 }))
 
 vi.mock('../config/limiter.config', () => ({

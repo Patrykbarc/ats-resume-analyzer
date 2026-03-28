@@ -22,7 +22,6 @@
     "@types/passport-jwt": "^4.0.1",
     "axios": "catalog:",
     "bcryptjs": "^3.0.3",
-    "bullmq": "^5.71.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "catalog:",
