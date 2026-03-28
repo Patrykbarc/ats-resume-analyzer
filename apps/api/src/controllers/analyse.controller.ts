@@ -1,10 +1,9 @@
 import { UserSchemaType } from '@monorepo/schemas'
-import type { AiAnalysis } from '@monorepo/types'
 import type { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
-import { redisClient } from '../config/redis.config'
+import { jobResults } from '../config/job-results'
 import { logger, openAiClient, prisma } from '../server'
 import {
   getAnalysisHistory as getAnalysisHistoryService,
@@ -111,22 +110,18 @@ export const getJobStatus = async (
       .json({ status: 'FAILED', error: job.error })
   }
 
-  // COMPLETED — fetch result from Redis
-  const resultJson = await redisClient.get(`result:${jobId}`)
+  // COMPLETED — fetch result from in-memory store
+  const result = jobResults.get(jobId)
 
-  if (!resultJson) {
+  if (!result) {
     return res.status(StatusCodes.NOT_FOUND).json({
       status: StatusCodes.NOT_FOUND,
-      error: 'Result has expired. Use GET /analysis/:id to retrieve it.'
+      error:
+        'Result not found. The server may have restarted — please try again.'
     })
   }
 
-  await redisClient.del(`result:${jobId}`)
-
-  const result = JSON.parse(resultJson) as AiAnalysis & {
-    parsed_file: string
-    user: { id: string } | null
-  }
+  jobResults.delete(jobId)
 
   return res.status(StatusCodes.OK).json({ status: 'COMPLETED', result })
 }
@@ -210,8 +205,7 @@ export const cancelJob = async (
         where: { id: jobId },
         data: { status: 'FAILED', error: 'Cancelled by user' }
       })
-      .catch(() => {}),
-    redisClient.del(`result:${jobId}`).catch(() => {})
+      .catch(() => {})
   ])
 
   return res.status(StatusCodes.OK).json({ status: 'cancelled' })

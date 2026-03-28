@@ -1,4 +1,4 @@
-import { redisClient } from '../config/redis.config'
+import { jobResults } from '../config/job-results'
 import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
 import { logger, prisma } from '../server'
 
@@ -11,8 +11,6 @@ export type AnalyzeJobData = {
   ipAddress: string | undefined
   userAgent: string | undefined
 }
-
-const RESULT_TTL_SECONDS = 60 * 60
 
 export async function processAnalyzeJob(jobId: string, data: AnalyzeJobData) {
   const {
@@ -51,11 +49,7 @@ export async function processAnalyzeJob(jobId: string, data: AnalyzeJobData) {
       user: userId ? { id: userId } : null
     }
 
-    await redisClient.setex(
-      `result:${jobId}`,
-      RESULT_TTL_SECONDS,
-      JSON.stringify(resultData)
-    )
+    jobResults.set(jobId, resultData)
 
     await prisma.analysisJob.update({
       where: { id: jobId },

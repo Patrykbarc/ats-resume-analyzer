@@ -91,3 +91,11 @@ model CronLog {
   id        String   @id @default(uuid())
   createdAt DateTime @unique @default(now())
 }
+
+model RateLimit {
+  key      String   @id
+  count    Int      @default(1)
+  resetAt  DateTime
+
+  @@map("rate_limits")
+}

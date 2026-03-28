@@ -1,14 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { redisClient } from '../config/redis.config'
+import { jobResults } from '../config/job-results'
 import { analyzeFile } from '../controllers/helper/analyze/analyzeFile'
 import { logger, prisma } from '../server'
 import { processAnalyzeJob, type AnalyzeJobData } from './analyze.worker'
 
 vi.mock('../server')
-
-vi.mock('../config/redis.config', () => ({
-  redisClient: { get: vi.fn(), del: vi.fn(), setex: vi.fn() }
-}))
 
 vi.mock('../controllers/helper/analyze/analyzeFile', () => ({
   analyzeFile: vi.fn()
@@ -28,13 +24,15 @@ const makeJobData = (
 })
 
 describe('processAnalyzeJob — success (anonymous)', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    jobResults.clear()
+  })
 
   it('sets status to PROCESSING then COMPLETED', async () => {
     const analysisResult = { id: 'analysis-id', score: 90 }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
     await processAnalyzeJob('job-test-id', makeJobData())
 
@@ -52,7 +50,6 @@ describe('processAnalyzeJob — success (anonymous)', () => {
     const analysisResult = { id: 'analysis-id' }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
     await processAnalyzeJob('job-test-id', makeJobData({ isPremium: true }))
 
@@ -61,30 +58,24 @@ describe('processAnalyzeJob — success (anonymous)', () => {
     })
   })
 
-  it('stores result in Redis with correct key, TTL, and payload', async () => {
+  it('stores result in memory with correct key and payload', async () => {
     const analysisResult = { id: 'analysis-id', score: 80 }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
     await processAnalyzeJob('job-test-id', makeJobData())
 
-    expect(redisClient.setex).toHaveBeenCalledWith(
-      'result:job-test-id',
-      3600,
-      JSON.stringify({
-        ...analysisResult,
-        parsed_file: 'Resume text here',
-        user: null
-      })
-    )
+    expect(jobResults.get('job-test-id')).toMatchObject({
+      ...analysisResult,
+      parsed_file: 'Resume text here',
+      user: null
+    })
   })
 
   it('does NOT call prisma.user.update when userId is null', async () => {
     const analysisResult = { id: 'analysis-id' }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
 
     await processAnalyzeJob('job-test-id', makeJobData({ userId: null }))
 
@@ -93,13 +84,15 @@ describe('processAnalyzeJob — success (anonymous)', () => {
 })
 
 describe('processAnalyzeJob — success (authenticated)', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    jobResults.clear()
+  })
 
   it('calls prisma.user.update with requestLogs.create containing all fields', async () => {
     const analysisResult = { id: 'analysis-id' }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
     await processAnalyzeJob(
@@ -131,29 +124,25 @@ describe('processAnalyzeJob — success (authenticated)', () => {
     })
   })
 
-  it('stores user: { id: userId } in Redis result data', async () => {
+  it('stores user: { id: userId } in result data', async () => {
     const analysisResult = { id: 'analysis-id' }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
     await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
 
-    const stored = JSON.parse(
-      vi.mocked(redisClient.setex).mock.calls[0][2] as string
-    )
-    expect(stored.user).toEqual({ id: 'user-123' })
+    expect(jobResults.get('job-test-id')).toMatchObject({
+      user: { id: 'user-123' }
+    })
   })
 
   it('decodes fileName from latin1 to utf8 correctly', async () => {
     const analysisResult = { id: 'analysis-id' }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
-    // Simulate latin1-encoded UTF-8 bytes for "résumé"
     const latin1Encoded = Buffer.from('résumé', 'utf8').toString('latin1')
 
     await processAnalyzeJob(
@@ -171,7 +160,6 @@ describe('processAnalyzeJob — success (authenticated)', () => {
     const analysisResult = { id: 'analysis-id' }
     vi.mocked(analyzeFile).mockResolvedValue(analysisResult as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockResolvedValue(undefined as never)
 
     await processAnalyzeJob(
@@ -187,7 +175,10 @@ describe('processAnalyzeJob — success (authenticated)', () => {
 })
 
 describe('processAnalyzeJob — analyzeFile returns error', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    jobResults.clear()
+  })
 
   it('sets status to FAILED with error message', async () => {
     vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
@@ -201,13 +192,13 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
     })
   })
 
-  it('does NOT call redisClient.setex', async () => {
+  it('does NOT store result in memory when analyzeFile fails', async () => {
     vi.mocked(analyzeFile).mockResolvedValue({ error: 'AI failed' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
 
     await processAnalyzeJob('job-test-id', makeJobData())
 
-    expect(redisClient.setex).not.toHaveBeenCalled()
+    expect(jobResults.has('job-test-id')).toBe(false)
   })
 
   it('does NOT call prisma.user.update even with userId set', async () => {
@@ -230,12 +221,14 @@ describe('processAnalyzeJob — analyzeFile returns error', () => {
 })
 
 describe('processAnalyzeJob — requestLogs failure does not override COMPLETED', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    jobResults.clear()
+  })
 
   it('job remains COMPLETED when prisma.user.update throws', async () => {
     vi.mocked(analyzeFile).mockResolvedValue({ id: 'analysis-id' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB lost'))
 
     await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
@@ -255,7 +248,6 @@ describe('processAnalyzeJob — requestLogs failure does not override COMPLETED'
   it('logs error when requestLogs creation fails', async () => {
     vi.mocked(analyzeFile).mockResolvedValue({ id: 'analysis-id' } as never)
     vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockResolvedValue('OK' as never)
     vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB lost'))
 
     await processAnalyzeJob('job-test-id', makeJobData({ userId: 'user-123' }))
@@ -268,7 +260,10 @@ describe('processAnalyzeJob — requestLogs failure does not override COMPLETED'
 })
 
 describe('processAnalyzeJob — unexpected error sets FAILED and re-throws', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    jobResults.clear()
+  })
 
   it('sets status FAILED and re-throws when analyzeFile throws unexpectedly', async () => {
     vi.mocked(analyzeFile).mockRejectedValue(new Error('Network error'))
@@ -277,22 +272,6 @@ describe('processAnalyzeJob — unexpected error sets FAILED and re-throws', () 
     await expect(
       processAnalyzeJob('job-test-id', makeJobData())
     ).rejects.toThrow('Network error')
-
-    expect(prisma.analysisJob.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: 'FAILED' })
-      })
-    )
-  })
-
-  it('sets status FAILED and re-throws when redisClient.setex throws', async () => {
-    vi.mocked(analyzeFile).mockResolvedValue({ id: 'analysis-id' } as never)
-    vi.mocked(prisma.analysisJob.update).mockResolvedValue(undefined as never)
-    vi.mocked(redisClient.setex).mockRejectedValue(new Error('Redis OOM'))
-
-    await expect(
-      processAnalyzeJob('job-test-id', makeJobData())
-    ).rejects.toThrow('Redis OOM')
 
     expect(prisma.analysisJob.update).toHaveBeenCalledWith(
       expect.objectContaining({

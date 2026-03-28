@@ -16,7 +16,6 @@ export type EnvironmentVariables = {
   CRON_SECRET_KEY: string
   STRIPE_PRICE_ID: string
   SENTRY_DSN: string
-  REDIS_URL: string
 }
 
 export const ENV_NAMES = [
@@ -35,6 +34,5 @@ export const ENV_NAMES = [
   'CRON_SECRET_KEY',
   'STRIPE_PRICE_ID',
   'SENTRY_DSN',
-  'REDIS_URL',
 ] as const
 

@@ -29,10 +29,6 @@ vi.mock('jsonwebtoken', () => ({
 
 vi.mock('../lib/getEnv')
 
-vi.mock('../config/redis.config', () => ({
-  redisClient: { get: vi.fn(), del: vi.fn() }
-}))
-
 vi.mock('../config/limiter.config', () => ({
   authAttemptLimiter: (_req: never, _res: never, next: () => void) => next(),
   analyzeLimiter: (_req: never, _res: never, next: () => void) => next(),
