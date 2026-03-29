@@ -15,7 +15,7 @@ export function PremiumCard({
 }: PropsWithChildren<PremiumCardProps>) {
   return (
     <Card>
-      <CardContent className="space-y-3 pt-6">
+      <CardContent className="space-y-3">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-lg font-semibold text-foreground">{title}</h3>

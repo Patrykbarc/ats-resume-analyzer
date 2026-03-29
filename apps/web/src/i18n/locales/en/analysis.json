@@ -33,10 +33,7 @@
       "fitAnalysis": "Fit analysis",
       "hook": "Hook",
       "body": "Body",
-      "close": "Close",
-      "oneShotPrompt": "One-shot prompt",
-      "noteTitle": "Use the prompt above to generate a cover letter.",
-      "noteDescription": "Do not forget to customize the generated letter to better suit your style and job description, especially company name."
+      "close": "Close"
     },
     "export": {
       "title": "CV layout order",

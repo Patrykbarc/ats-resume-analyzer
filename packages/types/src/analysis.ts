@@ -17,7 +17,6 @@ type PremiumModules = {
       body: string
       close: string
     }
-    tailored_prompt: string
   }
   interview_prep: {
     elevator_pitch: string
