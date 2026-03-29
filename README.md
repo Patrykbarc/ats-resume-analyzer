@@ -1,6 +1,6 @@
 # ATS Resume Analyzer
 
-A full-stack TypeScript monorepo that analyzes resumes for ATS (Applicant Tracking System) compatibility. Users upload a PDF; an async BullMQ worker calls the OpenAI Responses API and returns a structured score, keyword gaps, and actionable recommendations. Three user tiers (free / signed-in / premium) are enforced server-side and route to different AI models.
+A full-stack TypeScript monorepo that analyzes resumes for ATS (Applicant Tracking System) compatibility. Users upload a PDF; an async worker calls the OpenAI Responses API and returns a structured score, keyword gaps, and actionable recommendations. Three user tiers (free / signed-in / premium) are enforced server-side and route to different AI models.
 
 Applicant Tracking Systems are opaque by design — candidates submit resumes and receive no feedback on why they were filtered out. This project gives candidates visibility into how ATS algorithms interpret their resume before they apply.
 
@@ -28,7 +28,7 @@ Applicant Tracking Systems are opaque by design — candidates submit resumes an
 | Node.js + Express 5 + TypeScript | API server |
 | Passport.js | Authentication strategy |
 | Prisma ORM + PostgreSQL | Persistent storage |
-| Redis + BullMQ | Async job queue and result cache |
+| In-memory job processing | Async fire-and-forget worker; results cached in a module-level Map |
 | OpenAI Responses API | AI analysis (`gpt-4.1-nano` / `o3`) |
 | Resend | Transactional email |
 | Stripe | Subscription billing |
@@ -72,7 +72,6 @@ flowchart LR
     Resend["Resend\nemail"]
     SentryIO["Sentry.io\nerrors"]
     DB[("PostgreSQL")]
-    Redis[("Redis\nBullMQ queue\n+ result cache")]
   end
 
   User -->|"HTTPS"| Web
@@ -83,8 +82,6 @@ flowchart LR
   API --> Resend
   API --> SentryIO
   Web --> SentryIO
-  API -->|"enqueue job"| Redis
-  Redis -->|"job"| API
 
   Schemas -. "shared validation" .-> Web
   Schemas -. "shared validation" .-> API
@@ -101,11 +98,11 @@ flowchart TD
   Parse["Parse PDF\n→ extract text"]
   TierCheck{"User tier?"}
   CreateJob[("Create AnalysisJob\nin PostgreSQL\n(status: PENDING)")]
-  Enqueue["Enqueue job\nto BullMQ / Redis"]
+  FireAndForget["Fire-and-forget\nasync worker"]
   Return202(["Return 202\n{ jobId }"])
   Poll["Client polls\nGET /analyze/job/:jobId"]
 
-  subgraph Worker["BullMQ Worker"]
+  subgraph Worker["Async Worker"]
     direction TB
     MarkProcessing["Set status → PROCESSING"]
 
@@ -123,7 +120,7 @@ flowchart TD
 
     OpenAI["OpenAI Responses API\n→ returns stable id"]
     SaveDB[("Save RequestLog\nto PostgreSQL")]
-    StoreResult["Cache result\nin Redis (TTL)"]
+    StoreResult["Cache result\nin memory (Map)"]
     MarkCompleted["Set status → COMPLETED"]
   end
 
@@ -131,10 +128,10 @@ flowchart TD
   TierCheck -->|"unauthenticated"| CreateJob
   TierCheck -->|"authenticated"| CreateJob
   TierCheck -->|"premium"| CreateJob
-  CreateJob --> Enqueue --> Return202
+  CreateJob --> FireAndForget --> Return202
   Return202 --> Poll
 
-  Enqueue --> MarkProcessing
+  FireAndForget --> MarkProcessing
   MarkProcessing --> ModelFree & ModelSignedIn & ModelPremium
   ModelFree & ModelSignedIn & ModelPremium --> OpenAI
   OpenAI --> SaveDB --> StoreResult --> MarkCompleted
@@ -176,9 +173,9 @@ sequenceDiagram
 
 ## Key Engineering Decisions
 
-### Async Analysis via BullMQ
+### Async Analysis (Fire-and-Forget Worker)
 
-AI analysis runs inside a BullMQ worker rather than inline in the HTTP request handler. The API creates an `AnalysisJob` record in PostgreSQL, enqueues the job to Redis, and immediately returns `202 Accepted` with a `jobId`. The worker processes the job independently — calling OpenAI, saving the `RequestLog`, caching the result in Redis, and updating the job status. The client polls `GET /analyze/job/:jobId` until the job is `COMPLETED` or `FAILED`. This keeps request latency predictable, prevents HTTP timeouts on slow AI responses, and decouples the web tier from the processing tier.
+AI analysis runs inside an async worker rather than inline in the HTTP request handler. The API creates an `AnalysisJob` record in PostgreSQL, fires off `processAnalyzeJob()` as a detached async call (no external queue), and immediately returns `202 Accepted` with a `jobId`. The worker runs independently — calling OpenAI, saving the `RequestLog`, caching the result in a module-level `Map`, and updating the job status. The client polls `GET /analyze/job/:jobId` until the job is `COMPLETED` or `FAILED`. This keeps request latency predictable and prevents HTTP timeouts on slow AI responses, while avoiding any external queue dependency on a single-instance deployment.
 
 ### Tiered AI Models (gpt-4.1-nano / o3)
 
@@ -224,7 +221,7 @@ Sentry captures full stack traces, request context, and user metadata, then surf
 
 ## Engineering Challenges
 
-**Async job result delivery** — The BullMQ worker caches the completed analysis in Redis under `result:<jobId>`. The first successful `GET /analyze/job/:jobId` response deletes the key, so the result is consumed exactly once. If the client never reads it (e.g., tab closed), the key expires via Redis TTL and the full analysis remains accessible via `GET /analysis/:id` using the stable OpenAI response id stored in PostgreSQL.
+**Async job result delivery** — The async worker caches the completed analysis in a module-level `Map` keyed by `jobId`. The first successful `GET /analyze/job/:jobId` response removes the entry from the Map, so the result is consumed exactly once. If the client never reads it (e.g., tab closed, or server restarts before the poll), the entry is gone — but the full analysis remains permanently accessible via `GET /analysis/:id` using the stable OpenAI response id stored in PostgreSQL.
 
 **Stripe webhook idempotency** — Stripe can deliver the same webhook event more than once. The `handleCheckoutSessionCompleted` handler is safe to re-run: it checks whether the subscription is already active before writing to the database, preventing duplicate premium grants on re-delivery.
 
@@ -246,7 +243,7 @@ Sentry captures full stack traces, request context, and user metadata, then surf
 - PDF resume parsing and analysis
 - AI-powered evaluation using OpenAI (gpt-4.1-nano / o3)
 - Detailed ATS compatibility scoring with actionable recommendations
-- Async analysis processing via BullMQ job queue
+- Async analysis processing via fire-and-forget worker
 - User authentication with email verification
 - Premium subscription system via Stripe
 - Rate limiting and security
@@ -270,7 +267,7 @@ ats-resume-analyzer/
 │   │   │   ├── routes/      # API routes
 │   │   │   ├── services/    # Business logic (auth, email, analysis)
 │   │   │   ├── templates/   # Email templates
-│   │   │   └── workers/     # BullMQ job workers
+│   │   │   └── workers/     # Async job workers
 │   │   └── package.json
 │   └── web/                 # Frontend React application
 │       ├── src/
@@ -363,9 +360,6 @@ CRON_SECRET_KEY=your_random_cron_key
 
 # Sentry
 SENTRY_DSN=your_sentry_dsn_here
-
-# Redis (used by BullMQ job queue and result cache)
-REDIS_URL=redis://localhost:6379
 ```
 
 #### Web Configuration
@@ -571,7 +565,7 @@ Returns one of:
 { "status": "COMPLETED", "result": { ... } }
 ```
 
-The `result` object is deleted from Redis after the first successful read, so fetch it once and store it on the client.
+The `result` object is deleted from the in-memory cache after the first successful read, so fetch it once and store it on the client.
 
 #### Retrieve stored analysis
 
