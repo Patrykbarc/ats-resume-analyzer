@@ -57,7 +57,7 @@ const makeAnalyzeLimiter =
       const result = await checkAndIncrement(key)
       setRateLimitHeaders(res, result.remaining, result.resetAt)
       if (!result.allowed) {
-        return void res
+        return res
           .status(StatusCodes.TOO_MANY_REQUESTS)
           .json({ error: 'The limit of analyses has been reached.' })
       }
