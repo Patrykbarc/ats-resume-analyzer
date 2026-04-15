@@ -50,3 +50,20 @@ export const restoreSubscriptionService = async (user: UserId) => {
 
   return response
 }
+
+export const getInvoicesService = async () => {
+  const response = await apiClient.get<{ invoices: Invoice[] }>(
+    '/checkout/invoices'
+  )
+  return response.data.invoices
+}
+
+export type Invoice = {
+  id: string
+  number: string | null
+  date: number
+  amount: number
+  currency: string
+  status: string | null
+  pdfUrl: string | null
+}

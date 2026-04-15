@@ -194,6 +194,32 @@ export const cancelSubscription = async (req: Request, res: Response) => {
   }
 }
 
+export const getInvoices = async (req: Request, res: Response) => {
+  const id = (req.user as { id: string }).id
+  const user = await findUserWithSubscription(id)
+
+  if (!user?.stripeCustomerId) {
+    return res.status(StatusCodes.OK).json({ invoices: [] })
+  }
+
+  const invoices = await stripe.invoices.list({
+    customer: user.stripeCustomerId,
+    limit: 24
+  })
+
+  const mapped = invoices.data.map((inv) => ({
+    id: inv.id,
+    number: inv.number,
+    date: inv.created,
+    amount: inv.amount_paid,
+    currency: inv.currency,
+    status: inv.status,
+    pdfUrl: inv.invoice_pdf
+  }))
+
+  res.status(StatusCodes.OK).json({ invoices: mapped })
+}
+
 export const restoreSubscription = async (req: Request, res: Response) => {
   const id = (req.user as { id: string }).id
 

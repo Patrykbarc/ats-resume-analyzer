@@ -39,6 +39,17 @@
       "description": "Your subscription has expired. You've been switched to the Basic plan."
     }
   },
+  "invoices": {
+    "title": "Invoice History",
+    "description": "Download your past invoices",
+    "number": "Invoice",
+    "date": "Date",
+    "amount": "Amount",
+    "status": "Status",
+    "download": "Download",
+    "noInvoices": "No invoices found.",
+    "loading": "Loading invoices..."
+  },
   "deleteAccount": {
     "title": "Delete Account",
     "description": "Permanently delete your account and all associated data. This action cannot be undone.",

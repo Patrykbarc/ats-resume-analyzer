@@ -3,6 +3,7 @@ import { getUserAccountInformationsService } from '@/services/authService'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { AccountInformationCard } from './components/account-information-card'
+import { InvoiceHistoryCard } from './components/invoice-history-card'
 import { SubscriptionDetailsCard } from './components/subscription-details-card'
 
 export function AccountPage() {
@@ -28,6 +29,7 @@ export function AccountPage() {
         subscriptionStatus={data.subscriptionStatus}
         cancelAtPeriodEnd={data.cancelAtPeriodEnd}
       />
+      {data.subscriptionStatus !== null && <InvoiceHistoryCard />}
     </div>
   )
 }
