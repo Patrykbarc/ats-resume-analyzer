@@ -7,6 +7,7 @@ import { logger } from '../server'
 import {
   clearRefreshToken,
   computeIsPremium,
+  computeSubscriptionStatus,
   deleteUserAccount,
   findUserBasicInfo,
   findUserByConfirmationToken,
@@ -247,20 +248,39 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     })
   }
 
-  const { subscriptionCurrentPeriodEnd, ...userWithoutPeriodEnd } =
-    user as typeof user & {
-      subscriptionCurrentPeriodEnd?: Date | null
-    }
+  const {
+    subscriptionCurrentPeriodEnd,
+    subscriptionStatus,
+    cancelAtPeriodEnd,
+    ...userWithoutExtended
+  } = user as typeof user & {
+    subscriptionCurrentPeriodEnd?: Date | null
+    subscriptionStatus?: string | null
+    cancelAtPeriodEnd?: boolean
+  }
 
   const isPremiumValue = computeIsPremium({
     isPremium: user.isPremium,
     subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd ?? null
   })
 
+  const effectiveSubscriptionStatus = computeSubscriptionStatus({
+    subscriptionStatus: subscriptionStatus ?? null,
+    subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd ?? null,
+    cancelAtPeriodEnd: cancelAtPeriodEnd ?? false
+  })
+
+  const effectiveCancelAtPeriodEnd =
+    effectiveSubscriptionStatus === 'canceled' ? false : cancelAtPeriodEnd
+
   res.status(StatusCodes.OK).json({
-    ...userWithoutPeriodEnd,
+    ...userWithoutExtended,
     isPremium: isPremiumValue,
-    ...(extendQuery && { subscriptionCurrentPeriodEnd })
+    ...(extendQuery && {
+      subscriptionCurrentPeriodEnd,
+      subscriptionStatus: effectiveSubscriptionStatus,
+      cancelAtPeriodEnd: effectiveCancelAtPeriodEnd
+    })
   })
 }
 

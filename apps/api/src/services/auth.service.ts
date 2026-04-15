@@ -113,3 +113,19 @@ export const computeIsPremium = (user: {
   user.isPremium &&
   user.subscriptionCurrentPeriodEnd != null &&
   user.subscriptionCurrentPeriodEnd > new Date()
+
+export const computeSubscriptionStatus = (user: {
+  subscriptionStatus: string | null
+  subscriptionCurrentPeriodEnd: Date | null
+  cancelAtPeriodEnd: boolean
+}) => {
+  if (
+    user.subscriptionStatus === 'active' &&
+    user.cancelAtPeriodEnd &&
+    user.subscriptionCurrentPeriodEnd !== null &&
+    user.subscriptionCurrentPeriodEnd <= new Date()
+  ) {
+    return 'canceled'
+  }
+  return user.subscriptionStatus
+}

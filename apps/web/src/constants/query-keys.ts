@@ -7,7 +7,8 @@ export const QUERY_KEYS = {
     user: ['userSubscription'] as const
   },
   stripe: {
-    session: (sessionId: string) => ['stripeSession', sessionId] as const
+    session: (sessionId: string) => ['stripeSession', sessionId] as const,
+    invoices: ['stripeInvoices'] as const
   },
   analysis: {
     byId: (id: string) => ['analysis', id] as const,
