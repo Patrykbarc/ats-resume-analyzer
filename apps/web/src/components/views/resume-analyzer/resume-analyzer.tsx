@@ -10,6 +10,7 @@ export function ResumeAnalyzer({
   file,
   handleAnalyse,
   handleFileChange,
+  handleFileDrop,
   handleReset,
   validationError,
   mutationError,
@@ -20,7 +21,10 @@ export function ResumeAnalyzer({
       <Card className="border-border bg-card p-8">
         <div className="flex flex-col items-center justify-center space-y-6">
           {!file ? (
-            <UploadFile handleFileChange={handleFileChange} />
+            <UploadFile
+              handleFileChange={handleFileChange}
+              handleFileDrop={handleFileDrop}
+            />
           ) : (
             <AnalyzeFile
               file={file}

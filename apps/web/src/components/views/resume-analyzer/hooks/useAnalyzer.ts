@@ -69,6 +69,11 @@ export const useAnalyzer = () => {
     }
   }, [])
 
+  const handleFileDrop = useCallback((droppedFile: File) => {
+    setFile(droppedFile)
+    setValidationError(null)
+  }, [])
+
   const handleAnalyse = useCallback(() => {
     if (!file) {
       return
@@ -111,6 +116,7 @@ export const useAnalyzer = () => {
     file,
     handleAnalyse,
     handleFileChange,
+    handleFileDrop,
     handleReset,
     validationError,
     mutationError,
